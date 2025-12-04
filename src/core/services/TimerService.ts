@@ -12,13 +12,13 @@ class TimerServiceClass {
 
   constructor() {
     this.loadTimersFromLocalStorage();
-    
+
     // Save state precisely when the user leaves/reloads the page
     // to ensure 'updatedAt' is as accurate as possible.
     if (typeof window !== 'undefined') {
-        window.addEventListener('beforeunload', () => {
-            this.saveTimersToLocalStorage();
-        });
+      window.addEventListener('beforeunload', () => {
+        this.saveTimersToLocalStorage();
+      });
     }
   }
 
@@ -42,64 +42,64 @@ class TimerServiceClass {
         const now = new Date().getTime();
 
         timersArray.forEach(([id, timer]: [string, TimerCombination]) => {
-            // Clone to avoid side-effects
-            const hydratedTimer = { ...timer };
+          // Clone to avoid side-effects
+          const hydratedTimer = { ...timer };
 
-            switch (hydratedTimer.status) {
-              case TimerStatus.RUNNING: {
-                // When a running timer is loaded after a refresh, calculate elapsed time
-                // and update remainingTime accordingly so the timer resumes from the correct position
-                const lastUpdatedAt = new Date(hydratedTimer.updatedAt).getTime();
-                const elapsedSeconds = Math.floor((now - lastUpdatedAt) / 1000);
-                
-                // Subtract the elapsed time from remaining time
-                const newRemainingTime = Math.max(0, hydratedTimer.remainingTime - elapsedSeconds);
-                hydratedTimer.remainingTime = newRemainingTime;
-                
-                // Add elapsed time to total elapsed time
-                hydratedTimer.totalElapsedTime = (hydratedTimer.totalElapsedTime || 0) + elapsedSeconds;
-                
-                // If the segment completed during the reload, we need to handle segment transitions
-                if (newRemainingTime === 0) {
-                  // Move to next segment/repeat or mark as completed
-                  let nextIndex = hydratedTimer.currentSegmentIndex + 1;
-                  let nextRepeat = hydratedTimer.currentRepeat;
-                  
-                  if (nextIndex >= hydratedTimer.segments.length) {
-                    nextRepeat += 1;
-                    if (nextRepeat > hydratedTimer.repeatCount) {
-                      // Timer completed all segments and repeats
-                      hydratedTimer.status = TimerStatus.COMPLETED;
-                    } else {
-                      // Start next repeat
-                      nextIndex = 0;
-                      hydratedTimer.currentSegmentIndex = nextIndex;
-                      hydratedTimer.currentRepeat = nextRepeat;
-                      hydratedTimer.remainingTime = hydratedTimer.segments[nextIndex]?.duration || 0;
-                    }
+          switch (hydratedTimer.status) {
+            case TimerStatus.RUNNING: {
+              // When a running timer is loaded after a refresh, calculate elapsed time
+              // and update remainingTime accordingly so the timer resumes from the correct position
+              const lastUpdatedAt = new Date(hydratedTimer.updatedAt).getTime();
+              const elapsedSeconds = Math.floor((now - lastUpdatedAt) / 1000);
+
+              // Subtract the elapsed time from remaining time
+              const newRemainingTime = Math.max(0, hydratedTimer.remainingTime - elapsedSeconds);
+              hydratedTimer.remainingTime = newRemainingTime;
+
+              // Add elapsed time to total elapsed time
+              hydratedTimer.totalElapsedTime = (hydratedTimer.totalElapsedTime || 0) + elapsedSeconds;
+
+              // If the segment completed during the reload, we need to handle segment transitions
+              if (newRemainingTime === 0) {
+                // Move to next segment/repeat or mark as completed
+                let nextIndex = hydratedTimer.currentSegmentIndex + 1;
+                let nextRepeat = hydratedTimer.currentRepeat;
+
+                if (nextIndex >= hydratedTimer.segments.length) {
+                  nextRepeat += 1;
+                  if (nextRepeat > hydratedTimer.repeatCount) {
+                    // Timer completed all segments and repeats
+                    hydratedTimer.status = TimerStatus.COMPLETED;
                   } else {
-                    // Move to next segment in current repeat
+                    // Start next repeat
+                    nextIndex = 0;
                     hydratedTimer.currentSegmentIndex = nextIndex;
+                    hydratedTimer.currentRepeat = nextRepeat;
                     hydratedTimer.remainingTime = hydratedTimer.segments[nextIndex]?.duration || 0;
                   }
+                } else {
+                  // Move to next segment in current repeat
+                  hydratedTimer.currentSegmentIndex = nextIndex;
+                  hydratedTimer.remainingTime = hydratedTimer.segments[nextIndex]?.duration || 0;
                 }
-                
-                // Keep the timer running
-                break;
               }
-              case TimerStatus.PAUSED:
-                // When a timer is paused, its state should be restored exactly as it was.
-                // The remainingTime does not change. Any elapsed time while paused
-                // is calculated when the timer is resumed in the `start()` method.
-                break;
-              
-              case TimerStatus.IDLE:
-              case TimerStatus.COMPLETED:
-                  // These are inactive states, no special handling needed on load.
-                  break;
+
+              // Keep the timer running
+              break;
             }
-            
-            hydratedTimers.set(id, hydratedTimer);
+            case TimerStatus.PAUSED:
+              // When a timer is paused, its state should be restored exactly as it was.
+              // The remainingTime does not change. Any elapsed time while paused
+              // is calculated when the timer is resumed in the `start()` method.
+              break;
+
+            case TimerStatus.IDLE:
+            case TimerStatus.COMPLETED:
+              // These are inactive states, no special handling needed on load.
+              break;
+          }
+
+          hydratedTimers.set(id, hydratedTimer);
         });
 
         this.timers = hydratedTimers;
@@ -385,25 +385,25 @@ class TimerServiceClass {
 
       // Play a beep sound for 2 seconds
       try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioContext = window.AudioContext || (window as { webkitAudioContext?: new () => AudioContext }).webkitAudioContext;
         if (AudioContext) {
-            const audioContext = new AudioContext();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
-            
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Lower volume
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.start();
-            setTimeout(() => {
-                oscillator.stop();
-                audioContext.close();
-            }, 2000);
+          const audioContext = new AudioContext();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Lower volume
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          oscillator.start();
+          setTimeout(() => {
+            oscillator.stop();
+            audioContext.close();
+          }, 2000);
         }
       } catch (e) {
         console.warn("Audio play failed", e);

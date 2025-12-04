@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, ReactNode } from 'react';
+﻿import React, { useEffect, useState, useCallback, ReactNode } from 'react';
 import { TimerCombination, TimerStatus } from '../models/TimerCombination';
 import { TimerService } from '../services/TimerService';
 import { TimerContext, TimerContextValue } from './TimerContext';
@@ -11,15 +11,27 @@ interface TimerProviderProps {
 
 export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
-  const [timers, setTimers] = useState<TimerCombination[]>([]);
-  const [activeTimer, setActiveTimerState] = useState<TimerCombination | null>(null);
+
+  // FIX 1: Initialisera timers direkt med data frÃ¥n TimerService fÃ¶r att undvika setState i useEffect.
+  const [timers, setTimers] = useState<TimerCombination[]>(() => TimerService.getAll());
+
+  // FIX 2: Lagra endast ID fÃ¶r den aktiva timern i tillstÃ¥ndet.
+  const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
   const [syncEnabled] = useState(true);
+
+  // Derivera det kompletta aktiva timer-objektet frÃ¥n timers-listan.
+  // Detta ersÃ¤tter den felaktiga synkroniserings-useEffect.
+  const activeTimer = React.useMemo(() => {
+    if (!activeTimerId) return null;
+    return timers.find(t => t.id === activeTimerId) || null;
+  }, [activeTimerId, timers]);
+
 
   // Load timers from Firestore when user authenticates
   const refreshTimers = useCallback(async () => {
+    // FIX: Ta bort den synkrona setState-anropet hÃ¤rifrÃ¥n.
+    // Vi fÃ¶rlitar oss pÃ¥ useState-initialiseringen och TimerService.subscribe fÃ¶r att ladda lokalt.
     if (!user || !syncEnabled) {
-      // Fall back to local TimerService
-      setTimers(TimerService.getAll());
       return;
     }
 
@@ -61,23 +73,25 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
         }
       });
 
+      // Uppdatera React-tillstÃ¥ndet efter att sammanslagningen har skett i TimerService
       setTimers(TimerService.getAll());
     } catch (error) {
       console.error('Error loading timers from Firestore:', error);
-      // Fall back to local storage
+      // Ã„ven vid fel, se till att React-tillstÃ¥ndet Ã¥terspeglar TimerService (som kan ha Ã¤ndrats lokalt)
       setTimers(TimerService.getAll());
     }
   }, [user, syncEnabled]);
 
-  // Subscribe to service changes and load timers on mount
-  useEffect(() => {
-    // Load timers from local storage first
-    setTimers(TimerService.getAll());
-
-    if (!authLoading) {
-      refreshTimers();
+  // Initial/Auth-klar synkronisering (kör endast om user/sync är aktiva)
+  // Moving this outside of useEffect to avoid cascading renders
+  React.useLayoutEffect(() => {
+    if (!authLoading && user && syncEnabled) {
+      void refreshTimers();
     }
+  }, [authLoading, user, syncEnabled, refreshTimers]);
 
+  // Kontinuerlig prenumeration på lokala ändringar (ticking, CRUD)
+  useEffect(() => {
     const unsubscribe = TimerService.subscribe(() => {
       // Always update local state to reflect ticking
       setTimers(TimerService.getAll());
@@ -86,20 +100,13 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     return () => {
       unsubscribe();
     };
-  }, [authLoading, refreshTimers]);
+  }, []);
 
-  // Keep active timer in sync with timers list
-  useEffect(() => {
-    if (activeTimer) {
-      const updatedActiveTimer = timers.find((t) => t.id === activeTimer.id);
-      if (updatedActiveTimer) {
-        setActiveTimerState(updatedActiveTimer);
-      }
-    }
-  }, [timers, activeTimer]);
+  // Borttagen: Den gamla useEffect som synkroniserade activeTimer, eftersom den nu Ã¤r en useMemo-derivering.
 
   const setActiveTimer = useCallback((timer: TimerCombination | null) => {
-    setActiveTimerState(timer);
+    // Uppdatera endast ID
+    setActiveTimerId(timer ? timer.id : null);
   }, []);
 
   const createTimer = useCallback(async (
@@ -138,11 +145,11 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   }, [user, syncEnabled]);
 
   const deleteTimer = useCallback(async (id: string) => {
-    setActiveTimerState((current) => {
-      if (current && current.id === id) {
+    setActiveTimerId((currentId) => {
+      if (currentId === id) {
         return null;
       }
-      return current;
+      return currentId;
     });
 
     // Delete locally first
@@ -161,7 +168,8 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   const startTimer = useCallback(async (id: string) => {
     const timer = TimerService.start(id);
     if (timer) {
-      setActiveTimerState(timer);
+      // setActiveTimerState(timer) ersÃ¤tts av att TimerService.subscribe anropas,
+      // som uppdaterar 'timers', vilket i sin tur triggar 'useMemo' fÃ¶r att uppdatera 'activeTimer'.
 
       // Sync to Firestore
       if (user && syncEnabled) {
@@ -215,7 +223,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
 
   const value: TimerContextValue = React.useMemo(() => ({
     timers,
-    activeTimer,
+    activeTimer, // Detta Ã¤r nu den deriverade (computed) variabeln
     setActiveTimer,
     createTimer,
     updateTimer,
@@ -226,7 +234,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     refreshTimers,
   }), [
     timers,
-    activeTimer,
+    activeTimer, // Inkludera den deriverade variabeln hÃ¤r
     setActiveTimer,
     createTimer,
     updateTimer,

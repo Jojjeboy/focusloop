@@ -8,6 +8,97 @@ import { TimerCombination, TimerStatus } from '../models/TimerCombination';
 class TimerServiceClass {
   public timers: Map<string, TimerCombination> = new Map();
   private listeners: Set<() => void> = new Set();
+  private tickInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    this.loadTimersFromLocalStorage();
+    
+    // Save state precisely when the user leaves/reloads the page
+    // to ensure 'updatedAt' is as accurate as possible.
+    if (typeof window !== 'undefined') {
+        window.addEventListener('beforeunload', () => {
+            this.saveTimersToLocalStorage();
+        });
+    }
+  }
+
+  /**
+   * Save timers to local storage
+   */
+  private saveTimersToLocalStorage(): void {
+    const timersArray = Array.from(this.timers.entries());
+    localStorage.setItem('timers', JSON.stringify(timersArray));
+  }
+
+  /**
+   * Load timers from local storage and account for elapsed time
+   */
+  private loadTimersFromLocalStorage(): void {
+    const storedTimers = localStorage.getItem('timers');
+    if (storedTimers) {
+      try {
+        const timersArray = JSON.parse(storedTimers);
+        const hydratedTimers = new Map<string, TimerCombination>();
+        const now = new Date().getTime();
+
+        timersArray.forEach(([id, timer]: [string, TimerCombination]) => {
+            // Clone to avoid side-effects
+            const hydratedTimer = { ...timer };
+
+            // If the timer was running when saved, calculate how much time passed
+            // while the page was closed/reloading.
+            if (hydratedTimer.status === TimerStatus.RUNNING) {
+                const lastUpdate = new Date(hydratedTimer.updatedAt).getTime();
+                const secondsPassed = Math.floor((now - lastUpdate) / 1000);
+
+                if (secondsPassed > 0) {
+                    // Fast-forward the timer
+                    hydratedTimer.remainingTime -= secondsPassed;
+                    hydratedTimer.totalElapsedTime += secondsPassed;
+
+                    // If the time ran out completely while the app was closed
+                    if (hydratedTimer.remainingTime <= 0) {
+                        // We set it to 0. The very first tick() that runs after this
+                        // will detect 0 and trigger the next segment/sound logic automatically.
+                        hydratedTimer.remainingTime = 0;
+                    }
+                }
+            }
+            hydratedTimers.set(id, hydratedTimer);
+        });
+
+        this.timers = hydratedTimers;
+
+        if (this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+          this.startTicking();
+        }
+      } catch (error) {
+        console.error('Failed to parse timers from local storage', error);
+      }
+    }
+  }
+
+  /**
+   * Start ticking all running timers
+   */
+  private startTicking(): void {
+    if (this.tickInterval) {
+      return;
+    }
+    this.tickInterval = setInterval(() => {
+      this.tickAll();
+    }, 1000);
+  }
+
+  /**
+   * Stop ticking all running timers
+   */
+  private stopTicking(): void {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+  }
 
   /**
    * Subscribe to timer changes
@@ -23,6 +114,7 @@ class TimerServiceClass {
    * Notify all subscribers of changes
    */
   private notifyListeners(): void {
+    this.saveTimersToLocalStorage();
     this.listeners.forEach((callback) => callback());
   }
 
@@ -37,32 +129,25 @@ class TimerServiceClass {
    * Create a new timer combination
    */
   create(
-    data: Omit<
-      TimerCombination,
-      | 'id'
-      | 'createdAt'
-      | 'updatedAt'
-      | 'currentSegmentIndex'
-      | 'currentRepeat'
-      | 'status'
-      | 'remainingTime'
-      | 'totalElapsedTime'
-    >
+    data: Partial<TimerCombination>
   ): TimerCombination {
-    const id = this.generateId();
+    const id = data.id || this.generateId();
     const now = new Date();
 
     const timer: TimerCombination = {
       ...data,
       id,
-      currentSegmentIndex: 0,
-      currentRepeat: 1,
-      status: TimerStatus.IDLE,
-      remainingTime: data.segments[0]?.duration || 0,
-      totalElapsedTime: 0,
-      createdAt: now,
+      currentSegmentIndex: data.currentSegmentIndex || 0,
+      currentRepeat: data.currentRepeat || 1,
+      status: data.status || TimerStatus.IDLE,
+      remainingTime: data.remainingTime || data.segments?.[0]?.duration || 0,
+      totalElapsedTime: data.totalElapsedTime || 0,
+      createdAt: data.createdAt || now,
       updatedAt: now,
-    };
+      name: data.name || 'New Timer',
+      segments: data.segments || [],
+      repeatCount: data.repeatCount || 1,
+    } as TimerCombination;
 
     this.timers.set(id, timer);
     this.notifyListeners();
@@ -116,6 +201,11 @@ class TimerServiceClass {
     if (result) {
       this.notifyListeners();
     }
+
+    if (!this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+      this.stopTicking();
+    }
+
     return result;
   }
 
@@ -124,18 +214,6 @@ class TimerServiceClass {
    */
   clear(): void {
     this.timers.clear();
-    this.notifyListeners();
-  }
-
-  /**
-   * Load timers from external source (e.g. Firestore)
-   * Replaces all existing timers
-   */
-  load(timers: TimerCombination[]): void {
-    this.timers.clear();
-    timers.forEach(timer => {
-      this.timers.set(timer.id, timer);
-    });
     this.notifyListeners();
   }
 
@@ -155,23 +233,44 @@ class TimerServiceClass {
       return undefined;
     }
 
-    return this.update(id, {
+    this.startTicking();
+
+    const updateData: Partial<TimerCombination> = {
       status: TimerStatus.RUNNING,
-    });
+    };
+
+    if (timer.pausedAt) {
+      const pausedDuration = (new Date().getTime() - new Date(timer.pausedAt).getTime()) / 1000;
+      updateData.totalElapsedTime = timer.totalElapsedTime + Math.round(pausedDuration);
+      updateData.pausedAt = undefined;
+    }
+
+    return this.update(id, updateData);
   }
 
   /**
    * Pause a timer
    */
   pause(id: string): TimerCombination | undefined {
-    const timer = this.timers.get(id);
-    if (!timer || timer.status !== 'RUNNING') {
+    const timerToPause = this.timers.get(id);
+    if (!timerToPause || timerToPause.status !== 'RUNNING') {
       return undefined;
     }
 
-    return this.update(id, {
+    // Explicitly check how many are running *before* the update.
+    const runningTimers = this.getAll().filter(t => t.status === TimerStatus.RUNNING);
+
+    const updatedTimer = this.update(id, {
       status: TimerStatus.PAUSED,
+      pausedAt: new Date(),
     });
+
+    // If there was only 1 running timer (the one we just paused), stop ticking.
+    if (runningTimers.length === 1 && runningTimers[0].id === id) {
+      this.stopTicking();
+    }
+
+    return updatedTimer;
   }
 
   /**
@@ -183,13 +282,18 @@ class TimerServiceClass {
       return undefined;
     }
 
-    return this.update(id, {
+    const updatedTimer = this.update(id, {
       currentSegmentIndex: 0,
       currentRepeat: 1,
       status: TimerStatus.IDLE,
       remainingTime: timer.segments[0]?.duration || 0,
       totalElapsedTime: 0,
     });
+
+    if (!this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+      this.stopTicking();
+    }
+    return updatedTimer;
   }
 
   /**
@@ -245,17 +349,36 @@ class TimerServiceClass {
       }
 
       // Play a beep sound for 2 seconds
-      const audioContext = new window.AudioContext();
-      const oscillator = audioContext.createOscillator();
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
-      oscillator.connect(audioContext.destination);
-      oscillator.start();
-      setTimeout(() => {
-        oscillator.stop();
-      }, 2000);
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+            const audioContext = new AudioContext();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Lower volume
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 2000);
+        }
+      } catch (e) {
+        console.warn("Audio play failed", e);
+      }
 
-      return this.nextSegment(id);
+      const nextTimer = this.nextSegment(id);
+      if (nextTimer?.status === TimerStatus.COMPLETED && !this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+        this.stopTicking();
+      }
+      return nextTimer;
     }
 
     return this.update(id, {

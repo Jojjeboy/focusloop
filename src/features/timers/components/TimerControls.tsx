@@ -1,7 +1,5 @@
 import React from 'react';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
+import { Box, Button, IconButton, Tooltip } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import StopIcon from '@mui/icons-material/Stop';
@@ -38,45 +36,18 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
       }}
     >
       {/* Play/Pause Button */}
-      {!isRunning ? (
-        <Tooltip title="Start">
-          <IconButton
-            onClick={onStart}
-            color="primary"
-            size="large"
-            sx={{
-              width: 64,
-              height: 64,
-              backgroundColor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
-            }}
-          >
-            <PlayArrowIcon sx={{ fontSize: 32 }} />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Tooltip title="Pause">
-          <IconButton
-            onClick={onPause}
-            color="warning"
-            size="large"
-            sx={{
-              width: 64,
-              height: 64,
-              backgroundColor: 'warning.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'warning.dark',
-              },
-            }}
-          >
-            <PauseIcon sx={{ fontSize: 32 }} />
-          </IconButton>
-        </Tooltip>
-      )}
+      <Button
+        onClick={isRunning ? onPause : onStart}
+        variant="contained"
+        color={isRunning ? 'warning' : 'primary'}
+        size="large"
+        sx={{
+          width: 120,
+          height: 56,
+        }}
+      >
+        {isRunning ? 'Pausa' : 'Starta'}
+      </Button>
 
       {/* Reset Button */}
       {!isIdle && (

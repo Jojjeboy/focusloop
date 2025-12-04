@@ -1,15 +1,17 @@
 import React from 'react';
 import { Box, Typography, IconButton, Chip, CircularProgress, Menu, MenuItem } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { TimerCombination } from '../../../core/models/TimerCombination';
+import { TimerCombination, TimerStatus } from '../../../core/models/TimerCombination';
 
 interface TimerCardProps {
     timer: TimerCombination;
     onStart: () => void;
+    onPause: () => void;
     onReset: () => void;
     onEdit: () => void;
     onDelete: () => void;
@@ -19,6 +21,7 @@ interface TimerCardProps {
 export const TimerCard: React.FC<TimerCardProps> = ({
     timer,
     onStart,
+    onPause,
     onReset,
     onEdit,
     onDelete,
@@ -55,6 +58,8 @@ export const TimerCard: React.FC<TimerCardProps> = ({
         const minutes = Math.floor(seconds / 60);
         return `${minutes} min`;
     };
+
+    const isRunning = timer.status === TimerStatus.RUNNING;
 
     const currentSegment = timer.segments[timer.currentSegmentIndex];
     const segmentDuration = currentSegment ? currentSegment.duration : 1;
@@ -187,25 +192,25 @@ export const TimerCard: React.FC<TimerCardProps> = ({
             {/* Action Buttons */}
             <Box sx={{ display: 'flex', gap: 1 }}>
                 <Box
-                    onClick={onStart}
+                    onClick={isRunning ? onPause : onStart}
                     sx={{
                         flex: 1,
                         py: 1.5,
                         borderRadius: 2,
-                        background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                        background: isRunning ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        transition: 'transform 0.2s',
+                        transition: 'transform 0.2s, background 0.3s',
                         '&:hover': {
                             transform: 'translateY(-2px)',
                         },
                     }}
                 >
-                    <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />
+                    {isRunning ? <PauseIcon sx={{ color: 'white', mr: 0.5 }} /> : <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />}
                     <Typography sx={{ color: 'white', fontWeight: 600 }}>
-                        Start
+                        {isRunning ? 'Pause' : 'Start'}
                     </Typography>
                 </Box>
                 <IconButton

@@ -18,6 +18,7 @@ export const TimersPage: React.FC = () => {
   const {
     timers,
     startTimer,
+    pauseTimer,
     resetTimer,
     createTimer,
     updateTimer,
@@ -207,6 +208,7 @@ export const TimersPage: React.FC = () => {
               key={timer.id}
               timer={timer}
               onStart={() => startTimer(timer.id)}
+              onPause={() => pauseTimer(timer.id)}
               onReset={() => resetTimer(timer.id)}
               onEdit={() => handleEditTimer(timer)}
               onDelete={() => handleDeleteTimer(timer.id)}

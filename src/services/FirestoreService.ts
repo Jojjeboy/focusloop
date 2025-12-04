@@ -12,8 +12,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { TimerCombination } from '../core/models/TimerCombination';
+import { Note, CreateNoteDto, UpdateNoteDto } from '../core/models/Note';
 
 const TIMERS_COLLECTION = 'timers';
+const NOTES_COLLECTION = 'notes';
 
 /**
  * FirestoreService - Handles all Firestore operations for timers
@@ -123,6 +125,90 @@ export class FirestoreService {
             await deleteDoc(timerRef);
         } catch (error) {
             console.error('Error deleting timer:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get all notes for a user
+     */
+    static async getUserNotes(userId: string): Promise<Note[]> {
+        try {
+            const notesRef = collection(db, NOTES_COLLECTION);
+            const q = query(notesRef, where('userId', '==', userId));
+            const querySnapshot = await getDocs(q);
+
+            const notes: Note[] = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                notes.push({
+                    ...data,
+                    id: doc.id,
+                    createdAt: data.createdAt?.toDate?.() || new Date(),
+                    updatedAt: data.updatedAt?.toDate?.() || new Date(),
+                } as Note);
+            });
+
+            return notes;
+        } catch (error) {
+            console.error('Error getting notes:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Create a new note
+     */
+    static async createNote(
+        userId: string,
+        note: CreateNoteDto
+    ): Promise<string> {
+        try {
+            const noteRef = doc(collection(db, NOTES_COLLECTION));
+            const noteData = {
+                ...note,
+                userId,
+                completed: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
+            await setDoc(noteRef, noteData);
+            return noteRef.id;
+        } catch (error) {
+            console.error('Error creating note:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update an existing note
+     */
+    static async updateNote(
+        noteId: string,
+        updates: UpdateNoteDto
+    ): Promise<void> {
+        try {
+            const noteRef = doc(db, NOTES_COLLECTION, noteId);
+            await updateDoc(noteRef, {
+                ...updates,
+                updatedAt: serverTimestamp(),
+            });
+        } catch (error) {
+            console.error('Error updating note:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a note
+     */
+    static async deleteNote(noteId: string): Promise<void> {
+        try {
+            const noteRef = doc(db, NOTES_COLLECTION, noteId);
+            await deleteDoc(noteRef);
+        } catch (error) {
+            console.error('Error deleting note:', error);
             throw error;
         }
     }

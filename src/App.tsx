@@ -7,7 +7,6 @@ import {
   Box,
   AppBar,
   Toolbar,
-  Typography,
   IconButton,
   Drawer,
   List,
@@ -22,14 +21,17 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import HomeIcon from '@mui/icons-material/Home';
 import TimerIcon from '@mui/icons-material/Timer';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { TimerProvider, AuthProvider } from './core/context';
+import NoteIcon from '@mui/icons-material/Note';
+import { TimerProvider, AuthProvider, NoteProvider } from './core/context';
 import { HomePage } from './features/home';
 import { TimersPage } from './features/timers';
 import { SettingsPage } from './features/settings';
+import { NotesPage } from './features/notes';
 
 import { ProtectedRoute } from './core/components';
 import { useAuth } from './core/context/AuthContext';
 import LogoutIcon from '@mui/icons-material/Logout';
+import Logo from './assets/logo.png';
 
 // Layout component that contains AppBar and navigation
 const AppLayout = () => {
@@ -82,6 +84,7 @@ const AppLayout = () => {
   const menuItems = [
     { path: '/', label: 'Home', icon: <HomeIcon /> },
     { path: '/timers', label: 'Timers', icon: <TimerIcon /> },
+    { path: '/notes', label: 'Notes', icon: <NoteIcon /> },
     { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
   ];
 
@@ -106,9 +109,12 @@ const AppLayout = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}>
-              FocusLoop
-            </Typography>
+
+            {/* Logo instead of text */}
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+              <img src={Logo} alt="FocusLoop" style={{ height: '32px' }} />
+            </Box>
+
             <IconButton sx={{ color: 'text.primary', mr: 1 }} onClick={toggleDarkMode}>
               {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
@@ -145,6 +151,7 @@ const AppLayout = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/timers" element={<TimersPage />} />
+            <Route path="/notes" element={<NotesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Box>
@@ -157,9 +164,11 @@ const AppLayout = () => {
 const AuthenticatedApp = () => {
   return (
     <TimerProvider>
-      <ProtectedRoute>
-        <AppLayout />
-      </ProtectedRoute>
+      <NoteProvider>
+        <ProtectedRoute>
+          <AppLayout />
+        </ProtectedRoute>
+      </NoteProvider>
     </TimerProvider>
   );
 };

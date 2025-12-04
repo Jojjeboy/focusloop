@@ -99,40 +99,7 @@ export const TimersPage: React.FC = () => {
     <Box sx={{ minHeight: '100vh', bgcolor: '#FAFBFC' }}>
       <Container maxWidth="sm" sx={{ py: 3 }}>
         {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #9333EA 0%, #EC4899 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 2C12 2 8 6 8 10C8 12.21 9.79 14 12 14C14.21 14 16 12.21 16 10C16 6 12 2 12 2ZM12 22C12 22 16 18 16 14C16 11.79 14.21 10 12 10C9.79 10 8 11.79 8 14C8 18 12 22 12 22Z"
-                    fill="white"
-                    fillOpacity="0.9"
-                  />
-                </svg>
-              </Box>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2937' }}>
-                  FocusLoop
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Focus Timer
-                </Typography>
-              </Box>
-            </Box>
 
-          </Box>
-        </Box>
 
         {/* Stats Cards */}
         <StatsCards

@@ -239,6 +239,22 @@ class TimerServiceClass {
 
     // If current segment is complete, move to next
     if (newRemainingTime === 0) {
+      // Vibrate for 2 seconds
+      if (navigator.vibrate) {
+        navigator.vibrate(2000);
+      }
+
+      // Play a beep sound for 2 seconds
+      const audioContext = new window.AudioContext();
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+      oscillator.connect(audioContext.destination);
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+      }, 2000);
+
       return this.nextSegment(id);
     }
 

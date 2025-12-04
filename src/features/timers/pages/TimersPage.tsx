@@ -5,6 +5,15 @@ import { useTimers } from '../../../core/context/TimerContext';
 import { StatsCards, TimerCard, CreateTimerWizard } from '../components';
 import { TimerType, TimerCombination } from '../../../core/models/TimerCombination';
 
+// Definiera strukturen för datat som kommer från formuläret/wizard
+interface TimerFormData {
+  name: string;
+  category: string;
+  workDuration: number;
+  restDuration: number;
+  rounds: number;
+}
+
 export const TimersPage: React.FC = () => {
   const {
     timers,
@@ -16,7 +25,6 @@ export const TimersPage: React.FC = () => {
   } = useTimers();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
   const [editingTimer, setEditingTimer] = useState<TimerCombination | null>(null);
 
   // Calculate stats
@@ -29,7 +37,7 @@ export const TimersPage: React.FC = () => {
   // Color scheme for different timer types
   const timerColors = ['#9333EA', '#10B981', '#F59E0B', '#EC4899', '#06B6D4'];
 
-  const handleCreateOrUpdateTimer = async (timerData: any) => {
+  const handleCreateOrUpdateTimer = async (timerData: TimerFormData) => {
     const commonData = {
       name: timerData.name,
       description: `${timerData.category} timer`,
@@ -51,7 +59,9 @@ export const TimersPage: React.FC = () => {
     };
 
     if (editingTimer) {
-      const updates: any = { ...commonData };
+      // Använd Partial<TimerCombination> istället för any
+      // Detta tillåter oss att skicka in enbart de fält vi vill uppdatera
+      const updates: Partial<TimerCombination> = { ...commonData };
 
       // If timer is IDLE and at the start, update remainingTime to new duration
       if (editingTimer.status === 'IDLE' && editingTimer.currentSegmentIndex === 0 && editingTimer.remainingTime === editingTimer.segments[0].duration) {

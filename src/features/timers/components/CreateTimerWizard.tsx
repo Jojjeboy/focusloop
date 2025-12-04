@@ -10,6 +10,7 @@ import {
     IconButton,
     Chip,
     Stack,
+    Slider,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import WorkIcon from '@mui/icons-material/Work';
@@ -19,17 +20,21 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 
+// Definiera typen för datat som används i wizarden
+export interface TimerWizardData {
+    name: string;
+    category: string;
+    workDuration: number;
+    restDuration: number;
+    rounds: number;
+}
+
 interface CreateTimerWizardProps {
     open: boolean;
     onClose: () => void;
-    onCreate: (timerData: any) => void;
-    initialData?: {
-        name: string;
-        category: string;
-        workDuration: number;
-        restDuration: number;
-        rounds: number;
-    } | null;
+    // Byt ut 'any' mot den specifika typen
+    onCreate: (timerData: TimerWizardData) => void;
+    initialData?: TimerWizardData | null;
 }
 
 export const CreateTimerWizard: React.FC<CreateTimerWizardProps> = ({
@@ -49,8 +54,9 @@ export const CreateTimerWizard: React.FC<CreateTimerWizardProps> = ({
             if (initialData) {
                 setTimerName(initialData.name);
                 setCategory(initialData.category);
-                setWorkDuration(initialData.workDuration / 60);
-                setRestDuration(initialData.restDuration / 60);
+                // initialData kommer i sekunder, konvertera till minuter för UI
+                setWorkDuration(Math.floor(initialData.workDuration / 60));
+                setRestDuration(Math.floor(initialData.restDuration / 60));
                 setRounds(initialData.rounds);
             } else {
                 setTimerName('');
@@ -68,9 +74,6 @@ export const CreateTimerWizard: React.FC<CreateTimerWizardProps> = ({
         { name: 'Dev', icon: <CodeIcon />, color: '#F59E0B' },
         { name: 'Wellness', icon: <FavoriteIcon />, color: '#EC4899' },
     ];
-
-    const workPresets = [15, 25, 45, 60];
-    const restPresets = [5, 10, 15, 20];
 
     const handleCreate = () => {
         onCreate({
@@ -149,15 +152,15 @@ export const CreateTimerWizard: React.FC<CreateTimerWizardProps> = ({
                                     mb: 1,
                                     ...(category === cat.name
                                         ? {
-                                            background: `${cat.color}20`,
-                                            color: cat.color,
-                                            borderColor: cat.color,
-                                            border: '2px solid',
+                                                background: `${cat.color}20`,
+                                                color: cat.color,
+                                                borderColor: cat.color,
+                                                border: '2px solid',
                                         }
                                         : {
-                                            background: 'transparent',
-                                            border: '1px solid',
-                                            borderColor: 'divider',
+                                                background: 'transparent',
+                                                border: '1px solid',
+                                                borderColor: 'divider',
                                         }),
                                 }}
                             />
@@ -170,38 +173,19 @@ export const CreateTimerWizard: React.FC<CreateTimerWizardProps> = ({
                             <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
                                 Work (minutes)
                             </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                <IconButton
-                                    onClick={() => setWorkDuration(Math.max(5, workDuration - 5))}
-                                    size="small"
-                                    sx={{ border: '1px solid', borderColor: 'divider' }}
-                                >
-                                    <RemoveIcon fontSize="small" />
-                                </IconButton>
-                                <Typography variant="h4" sx={{ fontWeight: 700, minWidth: 60, textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <Slider
+                                    value={workDuration}
+                                    onChange={(_, newValue) => setWorkDuration(newValue as number)}
+                                    min={1}
+                                    max={60}
+                                    aria-labelledby="work-duration-slider"
+                                    valueLabelDisplay="auto"
+                                />
+                                <Typography variant="h6" sx={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>
                                     {workDuration}
                                 </Typography>
-                                <IconButton
-                                    onClick={() => setWorkDuration(workDuration + 5)}
-                                    size="small"
-                                    sx={{ border: '1px solid', borderColor: 'divider' }}
-                                >
-                                    <AddIcon fontSize="small" />
-                                </IconButton>
                             </Box>
-                            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                                {workPresets.map((preset) => (
-                                    <Chip
-                                        key={preset}
-                                        label={preset}
-                                        onClick={() => setWorkDuration(preset)}
-                                        size="small"
-                                        variant={workDuration === preset ? 'filled' : 'outlined'}
-                                        color={workDuration === preset ? 'primary' : 'default'}
-                                        clickable
-                                    />
-                                ))}
-                            </Stack>
                         </Box>
 
                         {/* Rest Duration */}
@@ -209,38 +193,19 @@ export const CreateTimerWizard: React.FC<CreateTimerWizardProps> = ({
                             <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
                                 Rest (minutes)
                             </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                <IconButton
-                                    onClick={() => setRestDuration(Math.max(1, restDuration - 1))}
-                                    size="small"
-                                    sx={{ border: '1px solid', borderColor: 'divider' }}
-                                >
-                                    <RemoveIcon fontSize="small" />
-                                </IconButton>
-                                <Typography variant="h4" sx={{ fontWeight: 700, minWidth: 60, textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <Slider
+                                    value={restDuration}
+                                    onChange={(_, newValue) => setRestDuration(newValue as number)}
+                                    min={1}
+                                    max={60}
+                                    aria-labelledby="rest-duration-slider"
+                                    valueLabelDisplay="auto"
+                                />
+                                <Typography variant="h6" sx={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>
                                     {restDuration}
                                 </Typography>
-                                <IconButton
-                                    onClick={() => setRestDuration(restDuration + 1)}
-                                    size="small"
-                                    sx={{ border: '1px solid', borderColor: 'divider' }}
-                                >
-                                    <AddIcon fontSize="small" />
-                                </IconButton>
                             </Box>
-                            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                                {restPresets.map((preset) => (
-                                    <Chip
-                                        key={preset}
-                                        label={preset}
-                                        onClick={() => setRestDuration(preset)}
-                                        size="small"
-                                        variant={restDuration === preset ? 'filled' : 'outlined'}
-                                        color={restDuration === preset ? 'primary' : 'default'}
-                                        clickable
-                                    />
-                                ))}
-                            </Stack>
                         </Box>
                     </Box>
 

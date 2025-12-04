@@ -41,6 +41,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
         variant="contained"
         color={isRunning ? 'warning' : 'primary'}
         size="large"
+        aria-label={isRunning ? 'Pause' : 'Start'}
         sx={{
           width: 120,
           height: 56,
@@ -56,6 +57,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             onClick={onReset}
             color="secondary"
             size="large"
+            aria-label="Reset"
             sx={{
               width: 56,
               height: 56,
@@ -73,6 +75,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             onClick={onNext}
             color="info"
             size="large"
+            aria-label="Next Segment"
             sx={{
               width: 56,
               height: 56,
@@ -90,6 +93,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
             onClick={onStop}
             color="error"
             size="large"
+            aria-label="Stop"
             sx={{
               width: 56,
               height: 56,

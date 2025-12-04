@@ -47,44 +47,12 @@ class TimerServiceClass {
 
             switch (hydratedTimer.status) {
               case TimerStatus.RUNNING: {
-                // When a running timer is loaded after a refresh, calculate elapsed time
-                // and update remainingTime accordingly so the timer resumes from the correct position
-                const lastUpdatedAt = new Date(hydratedTimer.updatedAt).getTime();
-                const elapsedSeconds = Math.floor((now - lastUpdatedAt) / 1000);
-                
-                // Subtract the elapsed time from remaining time
-                const newRemainingTime = Math.max(0, hydratedTimer.remainingTime - elapsedSeconds);
-                hydratedTimer.remainingTime = newRemainingTime;
-                
-                // Add elapsed time to total elapsed time
-                hydratedTimer.totalElapsedTime = (hydratedTimer.totalElapsedTime || 0) + elapsedSeconds;
-                
-                // If the segment completed during the reload, we need to handle segment transitions
-                if (newRemainingTime === 0) {
-                  // Move to next segment/repeat or mark as completed
-                  let nextIndex = hydratedTimer.currentSegmentIndex + 1;
-                  let nextRepeat = hydratedTimer.currentRepeat;
-                  
-                  if (nextIndex >= hydratedTimer.segments.length) {
-                    nextRepeat += 1;
-                    if (nextRepeat > hydratedTimer.repeatCount) {
-                      // Timer completed all segments and repeats
-                      hydratedTimer.status = TimerStatus.COMPLETED;
-                    } else {
-                      // Start next repeat
-                      nextIndex = 0;
-                      hydratedTimer.currentSegmentIndex = nextIndex;
-                      hydratedTimer.currentRepeat = nextRepeat;
-                      hydratedTimer.remainingTime = hydratedTimer.segments[nextIndex]?.duration || 0;
-                    }
-                  } else {
-                    // Move to next segment in current repeat
-                    hydratedTimer.currentSegmentIndex = nextIndex;
-                    hydratedTimer.remainingTime = hydratedTimer.segments[nextIndex]?.duration || 0;
-                  }
-                }
-                
-                // Keep the timer running
+                // When a running timer is loaded after a refresh, convert it to a paused state.
+                // This prevents the timer from continuing to count down in the background
+                // and allows the user to manually resume. The timer "resumes where it was".
+                hydratedTimer.status = TimerStatus.PAUSED;
+                // Set pausedAt to the time of hydration to be accurate for the next resume.
+                hydratedTimer.pausedAt = new Date(now);
                 break;
               }
               case TimerStatus.PAUSED:

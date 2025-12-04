@@ -130,20 +130,7 @@ export const TimersPage: React.FC = () => {
                 </Typography>
               </Box>
             </Box>
-            <IconButton
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{
-                width: 48,
-                height: 48,
-                background: 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)',
-                color: 'white',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%)',
-                },
-              }}
-            >
-              <AddIcon />
-            </IconButton>
+
           </Box>
         </Box>
 

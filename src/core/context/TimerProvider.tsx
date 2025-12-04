@@ -25,17 +25,42 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
 
     try {
       const firestoreTimers = await FirestoreService.getUserTimers(user.uid);
-      // Merge Firestore timers with local timers
+
+      // Smart merge: prefer local active timers over stale Firestore data
       firestoreTimers.forEach(firestoreTimer => {
         const localTimer = TimerService.getById(firestoreTimer.id);
+
         if (localTimer) {
-          // If timer exists locally, update it with Firestore data
-          TimerService.update(firestoreTimer.id, firestoreTimer);
+          // Check if local timer is in an active state (RUNNING or PAUSED)
+          const isLocalActive = localTimer.status === TimerStatus.RUNNING ||
+            localTimer.status === TimerStatus.PAUSED;
+
+          // Compare timestamps to determine which version is more recent
+          const localUpdatedAt = new Date(localTimer.updatedAt).getTime();
+          const firestoreUpdatedAt = new Date(firestoreTimer.updatedAt).getTime();
+          const isLocalNewer = localUpdatedAt > firestoreUpdatedAt;
+
+          if (isLocalActive || isLocalNewer) {
+            // Local timer is active or newer - push to Firestore instead of pulling
+            FirestoreService.updateTimer(firestoreTimer.id, {
+              status: localTimer.status,
+              currentSegmentIndex: localTimer.currentSegmentIndex,
+              currentRepeat: localTimer.currentRepeat,
+              remainingTime: localTimer.remainingTime,
+              totalElapsedTime: localTimer.totalElapsedTime,
+              pausedAt: localTimer.pausedAt,
+            }).catch(err => console.error('Error syncing local timer to Firestore:', err));
+            // Keep local timer as-is (don't overwrite with Firestore data)
+          } else {
+            // Firestore is newer and timer is idle - update local from Firestore
+            TimerService.update(firestoreTimer.id, firestoreTimer);
+          }
         } else {
-          // If timer doesn't exist locally, create it
+          // Timer doesn't exist locally - create it from Firestore
           TimerService.create(firestoreTimer);
         }
       });
+
       setTimers(TimerService.getAll());
     } catch (error) {
       console.error('Error loading timers from Firestore:', error);

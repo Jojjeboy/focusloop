@@ -1,16 +1,47 @@
 import { useState, useEffect } from 'react';
-import { Button, Container, Typography, Paper, Box, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import {
+    CssBaseline,
+    ThemeProvider,
+    createTheme,
+    Box,
+    AppBar,
+    Toolbar,
+    Typography,
+    IconButton,
+    Drawer,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import HomeIcon from '@mui/icons-material/Home';
+import TimerIcon from '@mui/icons-material/Timer';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { TimerProvider } from './core/context/TimerContext';
+import { HomePage } from './features/home';
+import { TimersPage } from './features/timers';
+import { SettingsPage } from './features/settings';
+
+type Page = 'home' | 'timers' | 'settings';
 
 function App() {
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('theme') === 'dark' ||
-                (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            return (
+                localStorage.getItem('theme') === 'dark' ||
+                (!('theme' in localStorage) &&
+                    window.matchMedia('(prefers-color-scheme: dark)').matches)
+            );
         }
         return false;
     });
+
+    const [currentPage, setCurrentPage] = useState<Page>('timers');
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
     useEffect(() => {
         if (darkMode) {
@@ -30,42 +61,94 @@ function App() {
     const theme = createTheme({
         palette: {
             mode: darkMode ? 'dark' : 'light',
+            primary: {
+                main: '#1976d2',
+            },
+            secondary: {
+                main: '#dc004e',
+            },
+        },
+        typography: {
+            fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
         },
     });
+
+    const menuItems = [
+        { id: 'home' as Page, label: 'Home', icon: <HomeIcon /> },
+        { id: 'timers' as Page, label: 'Timers', icon: <TimerIcon /> },
+        { id: 'settings' as Page, label: 'Settings', icon: <SettingsIcon /> },
+    ];
+
+    const renderPage = () => {
+        switch (currentPage) {
+            case 'home':
+                return <HomePage />;
+            case 'timers':
+                return <TimersPage />;
+            case 'settings':
+                return <SettingsPage />;
+            default:
+                return <TimersPage />;
+        }
+    };
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300 flex items-center justify-center">
-                <Container maxWidth="sm">
-                    <Paper elevation={3} className="p-8 text-center dark:bg-gray-800">
-                        <Typography variant="h3" component="h1" gutterBottom className="text-gray-800 dark:text-white font-bold">
-                            Focus Loop
-                        </Typography>
-                        <Typography variant="h6" component="p" gutterBottom className="text-gray-600 dark:text-gray-300 mb-6">
-                            Pomodoro Timer Application
-                        </Typography>
-
-                        <Box className="flex justify-center items-center gap-4">
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={toggleDarkMode}
-                                startIcon={darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-                                className="capitalize"
+            <TimerProvider>
+                <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                    {/* App Bar */}
+                    <AppBar position="static" elevation={2}>
+                        <Toolbar>
+                            <IconButton
+                                size="large"
+                                edge="start"
+                                color="inherit"
+                                aria-label="menu"
+                                sx={{ mr: 2 }}
+                                onClick={() => setDrawerOpen(true)}
                             >
-                                {darkMode ? 'Light Mode' : 'Dark Mode'}
-                            </Button>
-                        </Box>
-
-                        <Box className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                            <Typography variant="body1" className="text-blue-800 dark:text-blue-200">
-                                Tailwind CSS & Material UI are working!
+                                <MenuIcon />
+                            </IconButton>
+                            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700 }}>
+                                FocusLoop
                             </Typography>
+                            <IconButton color="inherit" onClick={toggleDarkMode}>
+                                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+                            </IconButton>
+                        </Toolbar>
+                    </AppBar>
+
+                    {/* Navigation Drawer */}
+                    <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+                        <Box
+                            sx={{ width: 250 }}
+                            role="presentation"
+                            onClick={() => setDrawerOpen(false)}
+                            onKeyDown={() => setDrawerOpen(false)}
+                        >
+                            <List>
+                                {menuItems.map((item) => (
+                                    <ListItem key={item.id} disablePadding>
+                                        <ListItemButton
+                                            selected={currentPage === item.id}
+                                            onClick={() => setCurrentPage(item.id)}
+                                        >
+                                            <ListItemIcon>{item.icon}</ListItemIcon>
+                                            <ListItemText primary={item.label} />
+                                        </ListItemButton>
+                                    </ListItem>
+                                ))}
+                            </List>
                         </Box>
-                    </Paper>
-                </Container>
-            </div>
+                    </Drawer>
+
+                    {/* Main Content */}
+                    <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
+                        {renderPage()}
+                    </Box>
+                </Box>
+            </TimerProvider>
         </ThemeProvider>
     );
 }

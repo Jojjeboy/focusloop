@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import {
   CssBaseline,
   ThemeProvider,
@@ -16,21 +16,15 @@ import {
   ListItemText,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import HomeIcon from '@mui/icons-material/Home';
 import TimerIcon from '@mui/icons-material/Timer';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NoteIcon from '@mui/icons-material/Note';
 import { TimerProvider, AuthProvider, NoteProvider } from './core/context';
-import { HomePage } from './features/home';
 import { TimersPage } from './features/timers';
 import { SettingsPage } from './features/settings';
 import { NotesPage } from './features/notes';
 
-import { ProtectedRoute } from './core/components';
-import { useAuth } from './core/context/AuthContext';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { ProtectedRoute, ProfileMenu } from './core/components';
 import Logo from './assets/logo.png';
 
 // Layout component that contains AppBar and navigation
@@ -47,7 +41,6 @@ const AppLayout = () => {
   });
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -82,7 +75,6 @@ const AppLayout = () => {
   });
 
   const menuItems = [
-    { path: '/', label: 'Home', icon: <HomeIcon /> },
     { path: '/timers', label: 'Timers', icon: <TimerIcon /> },
     { path: '/notes', label: 'Notes', icon: <NoteIcon /> },
     { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
@@ -115,12 +107,7 @@ const AppLayout = () => {
               <img src={Logo} alt="FocusLoop" style={{ height: '32px' }} />
             </Box>
 
-            <IconButton sx={{ color: 'text.primary', mr: 1 }} onClick={toggleDarkMode}>
-              {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-            <IconButton sx={{ color: 'text.primary' }} onClick={logout}>
-              <LogoutIcon />
-            </IconButton>
+            <ProfileMenu darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
           </Toolbar>
         </AppBar>
 
@@ -149,7 +136,7 @@ const AppLayout = () => {
         {/* Main Content */}
         <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<Navigate to="/timers" replace />} />
             <Route path="/timers" element={<TimersPage />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/settings" element={<SettingsPage />} />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import {
   CssBaseline,
   ThemeProvider,
@@ -26,14 +27,12 @@ import { HomePage } from './features/home';
 import { TimersPage } from './features/timers';
 import { SettingsPage } from './features/settings';
 
-type Page = 'home' | 'timers' | 'settings';
-
 import { ProtectedRoute } from './core/components';
 import { useAuth } from './core/context/AuthContext';
 import LogoutIcon from '@mui/icons-material/Logout';
 
-// Inner App component to access AuthContext
-const AuthenticatedApp = () => {
+// Layout component that contains AppBar and navigation
+const AppLayout = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -45,9 +44,10 @@ const AuthenticatedApp = () => {
     return false;
   });
 
-  const [currentPage, setCurrentPage] = useState<Page>('timers');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (darkMode) {
@@ -80,94 +80,97 @@ const AuthenticatedApp = () => {
   });
 
   const menuItems = [
-    { id: 'home' as Page, label: 'Home', icon: <HomeIcon /> },
-    { id: 'timers' as Page, label: 'Timers', icon: <TimerIcon /> },
-    { id: 'settings' as Page, label: 'Settings', icon: <SettingsIcon /> },
+    { path: '/', label: 'Home', icon: <HomeIcon /> },
+    { path: '/timers', label: 'Timers', icon: <TimerIcon /> },
+    { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
   ];
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <HomePage />;
-      case 'timers':
-        return <TimersPage />;
-      case 'settings':
-        return <SettingsPage />;
-      default:
-        return <TimersPage />;
-    }
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    setDrawerOpen(false);
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <TimerProvider>
-        <ProtectedRoute>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            {/* App Bar */}
-            <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Toolbar>
-                <IconButton
-                  size="large"
-                  edge="start"
-                  aria-label="menu"
-                  sx={{ mr: 2, color: 'text.primary' }}
-                  onClick={() => setDrawerOpen(true)}
-                >
-                  <MenuIcon />
-                </IconButton>
-                <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}>
-                  FocusLoop
-                </Typography>
-                <IconButton sx={{ color: 'text.primary', mr: 1 }} onClick={toggleDarkMode}>
-                  {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-                </IconButton>
-                <IconButton sx={{ color: 'text.primary' }} onClick={logout}>
-                  <LogoutIcon />
-                </IconButton>
-              </Toolbar>
-            </AppBar>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* App Bar */}
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Toolbar>
+            <IconButton
+              size="large"
+              edge="start"
+              aria-label="menu"
+              sx={{ mr: 2, color: 'text.primary' }}
+              onClick={() => setDrawerOpen(true)}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 700, color: 'text.primary' }}>
+              FocusLoop
+            </Typography>
+            <IconButton sx={{ color: 'text.primary', mr: 1 }} onClick={toggleDarkMode}>
+              {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+            <IconButton sx={{ color: 'text.primary' }} onClick={logout}>
+              <LogoutIcon />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
 
-            {/* Navigation Drawer */}
-            <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-              <Box
-                sx={{ width: 250 }}
-                role="presentation"
-                onClick={() => setDrawerOpen(false)}
-                onKeyDown={() => setDrawerOpen(false)}
-              >
-                <List>
-                  {menuItems.map((item) => (
-                    <ListItem key={item.id} disablePadding>
-                      <ListItemButton
-                        selected={currentPage === item.id}
-                        onClick={() => setCurrentPage(item.id)}
-                      >
-                        <ListItemIcon>{item.icon}</ListItemIcon>
-                        <ListItemText primary={item.label} />
-                      </ListItemButton>
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            </Drawer>
-
-            {/* Main Content */}
-            <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
-              {renderPage()}
-            </Box>
+        {/* Navigation Drawer */}
+        <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          <Box
+            sx={{ width: 250 }}
+            role="presentation"
+          >
+            <List>
+              {menuItems.map((item) => (
+                <ListItem key={item.path} disablePadding>
+                  <ListItemButton
+                    selected={location.pathname === item.path}
+                    onClick={() => handleNavigate(item.path)}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.label} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
           </Box>
-        </ProtectedRoute>
-      </TimerProvider>
+        </Drawer>
+
+        {/* Main Content */}
+        <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/timers" element={<TimersPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </Box>
+      </Box>
     </ThemeProvider>
+  );
+};
+
+// Inner App component to access AuthContext
+const AuthenticatedApp = () => {
+  return (
+    <TimerProvider>
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    </TimerProvider>
   );
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <AuthenticatedApp />
-    </AuthProvider>
+    <HashRouter>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
+    </HashRouter>
   );
 }
 

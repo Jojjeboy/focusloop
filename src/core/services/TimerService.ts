@@ -6,7 +6,7 @@ import { TimerCombination, TimerStatus } from '../models/TimerCombination';
  */
 
 class TimerServiceClass {
-  private timers: Map<string, TimerCombination> = new Map();
+  public timers: Map<string, TimerCombination> = new Map();
   private listeners: Set<() => void> = new Set();
 
   /**
@@ -128,6 +128,18 @@ class TimerServiceClass {
   }
 
   /**
+   * Load timers from external source (e.g. Firestore)
+   * Replaces all existing timers
+   */
+  load(timers: TimerCombination[]): void {
+    this.timers.clear();
+    timers.forEach(timer => {
+      this.timers.set(timer.id, timer);
+    });
+    this.notifyListeners();
+  }
+
+  /**
    * Get timer count
    */
   count(): number {
@@ -234,6 +246,22 @@ class TimerServiceClass {
       remainingTime: newRemainingTime,
       totalElapsedTime: newTotalElapsedTime,
     });
+  }
+
+  /**
+   * Tick all running timers
+   */
+  tickAll(): TimerCombination[] {
+    const updatedTimers: TimerCombination[] = [];
+    this.timers.forEach((timer) => {
+      if (timer.status === TimerStatus.RUNNING) {
+        const updated = this.tick(timer.id);
+        if (updated) {
+          updatedTimers.push(updated);
+        }
+      }
+    });
+    return updatedTimers;
   }
 }
 

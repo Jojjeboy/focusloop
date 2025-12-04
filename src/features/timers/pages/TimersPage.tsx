@@ -1,219 +1,243 @@
 import React, { useState } from 'react';
-import { Container, Box, Grid, Typography, Fab, Stack } from '@mui/material';
+import { Box, Container, Typography, IconButton, Fab } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useTimers } from '../../../core/context/TimerContext';
-import { TimerDisplay, TimerControls, TimerList } from '../components';
-import { AppButton, AppDialog } from '../../../shared/components';
-import { DEFAULT_TIMER_PRESETS, TimerCombination } from '../../../core/models/TimerCombination';
-import { TimerService } from '../../../core/services/TimerService';
+import { StatsCards, TimerCard, CreateTimerWizard } from '../components';
+import { TimerType, TimerCombination } from '../../../core/models/TimerCombination';
 
 export const TimersPage: React.FC = () => {
   const {
     timers,
-    activeTimer,
-    setActiveTimer,
     startTimer,
-    pauseTimer,
     resetTimer,
-    deleteTimer,
     createTimer,
+    updateTimer,
+    deleteTimer,
   } = useTimers();
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const handleSelectTimer = (timer: TimerCombination) => {
-    setActiveTimer(timer);
-  };
+  const [editingTimer, setEditingTimer] = useState<TimerCombination | null>(null);
 
-  const handleStart = () => {
-    if (activeTimer) {
-      startTimer(activeTimer.id);
+  // Calculate stats
+  const activeCount = timers.filter(t => t.status === 'RUNNING' || t.status === 'PAUSED').length;
+  const completedCount = timers.filter(t => t.status === 'COMPLETED').length;
+  const totalTimeHours = Math.floor(
+    timers.reduce((acc, t) => acc + t.totalElapsedTime, 0) / 3600
+  );
+
+  // Color scheme for different timer types
+  const timerColors = ['#9333EA', '#10B981', '#F59E0B', '#EC4899', '#06B6D4'];
+
+  const handleCreateOrUpdateTimer = async (timerData: any) => {
+    const commonData = {
+      name: timerData.name,
+      description: `${timerData.category} timer`,
+      segments: [
+        {
+          id: '1',
+          type: TimerType.FOCUS,
+          duration: timerData.workDuration,
+          label: 'Work',
+        },
+        {
+          id: '2',
+          type: TimerType.SHORT_BREAK,
+          duration: timerData.restDuration,
+          label: 'Rest',
+        },
+      ],
+      repeatCount: timerData.rounds,
+    };
+
+    if (editingTimer) {
+      const updates: any = { ...commonData };
+
+      // If timer is IDLE and at the start, update remainingTime to new duration
+      if (editingTimer.status === 'IDLE' && editingTimer.currentSegmentIndex === 0 && editingTimer.remainingTime === editingTimer.segments[0].duration) {
+        updates.remainingTime = commonData.segments[0].duration;
+      } else if (editingTimer.status === 'IDLE' && editingTimer.currentSegmentIndex === 0) {
+        // Also update if it was just IDLE, even if remainingTime didn't match exactly (e.g. if it was reset)
+        updates.remainingTime = commonData.segments[0].duration;
+      }
+
+      await updateTimer(editingTimer.id, updates);
+      setEditingTimer(null);
+    } else {
+      await createTimer(commonData);
     }
   };
 
-  const handlePause = () => {
-    if (activeTimer) {
-      pauseTimer(activeTimer.id);
+  const handleEditTimer = (timer: TimerCombination) => {
+    setEditingTimer(timer);
+    setCreateDialogOpen(true);
+  };
+
+  const handleDeleteTimer = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this timer?')) {
+      await deleteTimer(id);
     }
   };
 
-  const handleReset = () => {
-    if (activeTimer) {
-      resetTimer(activeTimer.id);
-    }
-  };
-
-  const handleNext = () => {
-    if (activeTimer) {
-      TimerService.nextSegment(activeTimer.id);
-    }
-  };
-
-  const handleStop = () => {
-    if (activeTimer) {
-      resetTimer(activeTimer.id);
-      setActiveTimer(null);
-    }
-  };
-
-  const handleCreatePomodoro = () => {
-    const preset = DEFAULT_TIMER_PRESETS.POMODORO;
-    const newTimer = createTimer({
-      name: preset.name,
-      description: preset.description,
-      segments: preset.segments.map((seg) => ({ ...seg, id: '' })),
-      repeatCount: preset.repeatCount,
-    });
-    setActiveTimer(newTimer);
+  const handleCloseDialog = () => {
     setCreateDialogOpen(false);
-  };
-
-  const handleCreateLongPomodoro = () => {
-    const preset = DEFAULT_TIMER_PRESETS.LONG_POMODORO;
-    const newTimer = createTimer({
-      name: preset.name,
-      description: preset.description,
-      segments: preset.segments.map((seg) => ({ ...seg, id: '' })),
-      repeatCount: preset.repeatCount,
-    });
-    setActiveTimer(newTimer);
-    setCreateDialogOpen(false);
-  };
-
-  const handleCreateCustom = () => {
-    const preset = DEFAULT_TIMER_PRESETS.CUSTOM_CYCLE;
-    const newTimer = createTimer({
-      name: preset.name,
-      description: preset.description,
-      segments: preset.segments.map((seg) => ({ ...seg, id: '' })),
-      repeatCount: preset.repeatCount,
-    });
-    setActiveTimer(newTimer);
-    setCreateDialogOpen(false);
+    setEditingTimer(null);
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-          Focus Timers
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage your productivity with customizable timer combinations
-        </Typography>
-      </Box>
-
-      <Grid container spacing={3}>
-        {/* Active Timer Display */}
-        <Grid item xs={12} md={8}>
-          {activeTimer ? (
-            <>
-              <TimerDisplay timer={activeTimer} />
-              <TimerControls
-                timer={activeTimer}
-                onStart={handleStart}
-                onPause={handlePause}
-                onReset={handleReset}
-                onNext={handleNext}
-                onStop={handleStop}
-              />
-            </>
-          ) : (
-            <Box
+    <Box sx={{ minHeight: '100vh', bgcolor: '#FAFBFC' }}>
+      <Container maxWidth="sm" sx={{ py: 3 }}>
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #9333EA 0%, #EC4899 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 2C12 2 8 6 8 10C8 12.21 9.79 14 12 14C14.21 14 16 12.21 16 10C16 6 12 2 12 2ZM12 22C12 22 16 18 16 14C16 11.79 14.21 10 12 10C9.79 10 8 11.79 8 14C8 18 12 22 12 22Z"
+                    fill="white"
+                    fillOpacity="0.9"
+                  />
+                </svg>
+              </Box>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: '#1F2937' }}>
+                  FocusLoop
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  Focus Timer
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton
+              onClick={() => setCreateDialogOpen(true)}
               sx={{
-                p: 6,
-                textAlign: 'center',
-                border: '2px dashed',
-                borderColor: 'divider',
-                borderRadius: 2,
-                backgroundColor: 'background.paper',
+                width: 48,
+                height: 48,
+                background: 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)',
+                color: 'white',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%)',
+                },
               }}
             >
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Active Timer
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Select a timer from the list or create a new one
-              </Typography>
-              <AppButton
-                variant="contained"
-                color="primary"
-                onClick={() => setCreateDialogOpen(true)}
-                startIcon={<AddIcon />}
-              >
-                Create Timer
-              </AppButton>
-            </Box>
-          )}
-        </Grid>
+              <AddIcon />
+            </IconButton>
+          </Box>
+        </Box>
 
-        {/* Timer List */}
-        <Grid item xs={12} md={4}>
-          <TimerList
-            timers={timers}
-            onSelect={handleSelectTimer}
-            onDelete={deleteTimer}
-            selectedTimerId={activeTimer?.id}
-          />
-        </Grid>
-      </Grid>
+        {/* Stats Cards */}
+        <StatsCards
+          activeCount={activeCount}
+          completedCount={completedCount}
+          totalTime={`${totalTimeHours}h`}
+        />
 
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="add timer"
-        sx={{ position: 'fixed', bottom: 24, right: 24 }}
-        onClick={() => setCreateDialogOpen(true)}
-      >
-        <AddIcon />
-      </Fab>
+        {/* Section Title */}
+        <Typography
+          variant="overline"
+          sx={{
+            display: 'block',
+            mb: 2,
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            letterSpacing: 1,
+            color: '#6B7280',
+          }}
+        >
+          ACTIVE TIMERS
+        </Typography>
+
+        {/* Timer Cards */}
+        {timers.length === 0 ? (
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 8,
+              px: 3,
+              borderRadius: 3,
+              bgcolor: 'white',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 1, color: 'text.secondary' }}>
+              No timers yet
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+              Create your first timer to get started
+            </Typography>
+            <IconButton
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{
+                width: 56,
+                height: 56,
+                background: 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)',
+                color: 'white',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%)',
+                },
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Box>
+        ) : (
+          timers.map((timer, index) => (
+            <TimerCard
+              key={timer.id}
+              timer={timer}
+              onStart={() => startTimer(timer.id)}
+              onReset={() => resetTimer(timer.id)}
+              onEdit={() => handleEditTimer(timer)}
+              onDelete={() => handleDeleteTimer(timer.id)}
+              color={timerColors[index % timerColors.length]}
+            />
+          ))
+        )}
+
+        {/* Floating Action Button for mobile */}
+        <Fab
+          color="primary"
+          aria-label="add timer"
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            background: 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%)',
+            },
+          }}
+          onClick={() => setCreateDialogOpen(true)}
+        >
+          <AddIcon />
+        </Fab>
+      </Container>
 
       {/* Create Timer Dialog */}
-      <AppDialog
+      <CreateTimerWizard
         open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        title="Create Timer"
-        maxWidth="sm"
-      >
-        <Stack spacing={2}>
-          <Typography variant="body2" color="text.secondary">
-            Choose a preset to get started:
-          </Typography>
-
-          <AppButton fullWidth variant="outlined" onClick={handleCreatePomodoro}>
-            <Box sx={{ textAlign: 'left', width: '100%' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                Pomodoro
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                25 min focus + 5 min break • 4 cycles
-              </Typography>
-            </Box>
-          </AppButton>
-
-          <AppButton fullWidth variant="outlined" onClick={handleCreateLongPomodoro}>
-            <Box sx={{ textAlign: 'left', width: '100%' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                Long Pomodoro
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                50 min focus + 10 min break • 3 cycles
-              </Typography>
-            </Box>
-          </AppButton>
-
-          <AppButton fullWidth variant="outlined" onClick={handleCreateCustom}>
-            <Box sx={{ textAlign: 'left', width: '100%' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                Work Cycle
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Mixed intervals with long breaks • 2 cycles
-              </Typography>
-            </Box>
-          </AppButton>
-        </Stack>
-      </AppDialog>
-    </Container>
+        onClose={handleCloseDialog}
+        onCreate={handleCreateOrUpdateTimer}
+        initialData={editingTimer ? {
+          name: editingTimer.name,
+          category: editingTimer.description?.split(' ')[0] || 'Work',
+          workDuration: editingTimer.segments[0].duration,
+          restDuration: editingTimer.segments[1]?.duration || 300,
+          rounds: editingTimer.repeatCount
+        } : null}
+      />
+    </Box>
   );
 };
 

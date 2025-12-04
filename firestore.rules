@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Timers collection - users can only access their own timers
+    match /timers/{timerId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Block all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

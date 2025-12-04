@@ -21,13 +21,13 @@ export interface TimerContextValue {
             | 'remainingTime'
             | 'totalElapsedTime'
         >
-    ) => TimerCombination;
-    updateTimer: (id: string, data: Partial<TimerCombination>) => void;
-    deleteTimer: (id: string) => void;
+    ) => Promise<TimerCombination>;
+    updateTimer: (id: string, data: Partial<TimerCombination>) => Promise<void>;
+    deleteTimer: (id: string) => Promise<void>;
     startTimer: (id: string) => void;
     pauseTimer: (id: string) => void;
     resetTimer: (id: string) => void;
-    refreshTimers: () => void;
+    refreshTimers: () => Promise<void>;
 }
 
 export const TimerContext = createContext<TimerContextValue | undefined>(undefined);

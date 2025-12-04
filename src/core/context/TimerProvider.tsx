@@ -1,35 +1,59 @@
 import React, { useEffect, useState, useCallback, ReactNode } from 'react';
-import { TimerCombination } from '../models/TimerCombination';
+import { TimerCombination, TimerStatus } from '../models/TimerCombination';
 import { TimerService } from '../services/TimerService';
 import { TimerContext, TimerContextValue } from './TimerContext';
+import { useAuth } from './AuthContext';
+import { FirestoreService } from '../../services/FirestoreService';
 
 interface TimerProviderProps {
   children: ReactNode;
 }
 
 export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
   const [timers, setTimers] = useState<TimerCombination[]>([]);
   const [activeTimer, setActiveTimerState] = useState<TimerCombination | null>(null);
   const [tickInterval, setTickInterval] = useState<NodeJS.Timeout | null>(null);
+  const [syncEnabled] = useState(true);
 
-  // Load timers from service
-  const refreshTimers = useCallback(() => {
-    setTimers(TimerService.getAll());
-  }, []);
+  // Load timers from Firestore when user authenticates
+  const refreshTimers = useCallback(async () => {
+    if (!user || !syncEnabled) {
+      // Fall back to local TimerService
+      setTimers(TimerService.getAll());
+      return;
+    }
 
-  // Subscribe to service changes
+    try {
+      const firestoreTimers = await FirestoreService.getUserTimers(user.uid);
+      setTimers(firestoreTimers);
+
+      // Also update local TimerService with Firestore data
+      TimerService.load(firestoreTimers);
+    } catch (error) {
+      console.error('Error loading timers from Firestore:', error);
+      // Fall back to local storage
+      setTimers(TimerService.getAll());
+    }
+  }, [user, syncEnabled]);
+
+  // Subscribe to service changes and load timers on mount
   useEffect(() => {
-    refreshTimers();
-    const unsubscribe = TimerService.subscribe(() => {
+    if (!authLoading) {
       refreshTimers();
+    }
+
+    const unsubscribe = TimerService.subscribe(() => {
+      // Always update local state to reflect ticking
+      setTimers(TimerService.getAll());
     });
 
     return () => {
       unsubscribe();
     };
-  }, [refreshTimers]);
+  }, [authLoading, refreshTimers]);
 
-  // Set up timer tick interval for active timer
+  // Set up timer tick interval
   useEffect(() => {
     // Clear existing interval
     if (tickInterval) {
@@ -37,31 +61,18 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       setTickInterval(null);
     }
 
-    // If there's an active running timer, start interval
-    if (activeTimer && activeTimer.status === 'RUNNING') {
-      const interval = setInterval(() => {
-        const updatedTimer = TimerService.tick(activeTimer.id);
-        if (updatedTimer) {
-          setActiveTimerState(updatedTimer);
+    // Start global tick interval
+    const interval = setInterval(() => {
+      TimerService.tickAll();
+    }, 1000);
 
-          // If timer completed, clear interval
-          if (updatedTimer.status === 'COMPLETED') {
-            clearInterval(interval);
-            setTickInterval(null);
-          }
-        }
-      }, 1000);
-
-      setTickInterval(interval);
-    }
+    setTickInterval(interval);
 
     return () => {
-      if (tickInterval) {
-        clearInterval(tickInterval);
-      }
+      clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTimer?.id, activeTimer?.status]);
+  }, []);
 
   // Keep active timer in sync with timers list
   useEffect(() => {
@@ -77,7 +88,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     setActiveTimerState(timer);
   }, []);
 
-  const createTimer = useCallback((
+  const createTimer = useCallback(async (
     data: Omit<
       TimerCombination,
       | 'id'
@@ -89,38 +100,109 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       | 'remainingTime'
       | 'totalElapsedTime'
     >
-  ): TimerCombination => {
-    return TimerService.create(data);
-  }, []);
+  ): Promise<TimerCombination> => {
+    // Create locally first
+    const timer = TimerService.create(data);
 
-  const updateTimer = useCallback((id: string, data: Partial<TimerCombination>) => {
+    // Sync to Firestore if user is authenticated
+    if (user && syncEnabled) {
+      try {
+        // Pass timer data without id, createdAt, updatedAt (Firestore handles these)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...timerData } = timer;
+        await FirestoreService.createTimer(user.uid, timerData);
+      } catch (error) {
+        console.error('Error creating timer in Firestore:', error);
+      }
+    }
+
+    return timer;
+  }, [user, syncEnabled]);
+
+  const updateTimer = useCallback(async (id: string, data: Partial<TimerCombination>) => {
+    // Update locally first
     TimerService.update(id, data);
-  }, []);
 
-  const deleteTimer = useCallback((id: string) => {
+    // Sync to Firestore if user is authenticated
+    if (user && syncEnabled) {
+      try {
+        await FirestoreService.updateTimer(id, data);
+      } catch (error) {
+        console.error('Error updating timer in Firestore:', error);
+      }
+    }
+  }, [user, syncEnabled]);
+
+  const deleteTimer = useCallback(async (id: string) => {
     setActiveTimerState((current) => {
       if (current && current.id === id) {
         return null;
       }
       return current;
     });
-    TimerService.delete(id);
-  }, []);
 
-  const startTimer = useCallback((id: string) => {
+    // Delete locally first
+    TimerService.delete(id);
+
+    // Sync to Firestore if user is authenticated
+    if (user && syncEnabled) {
+      try {
+        await FirestoreService.deleteTimer(id);
+      } catch (error) {
+        console.error('Error deleting timer from Firestore:', error);
+      }
+    }
+  }, [user, syncEnabled]);
+
+  const startTimer = useCallback(async (id: string) => {
     const timer = TimerService.start(id);
     if (timer) {
       setActiveTimerState(timer);
+
+      // Sync to Firestore
+      if (user && syncEnabled) {
+        try {
+          await FirestoreService.updateTimer(id, { status: TimerStatus.RUNNING });
+        } catch (error) {
+          console.error('Error syncing start timer:', error);
+        }
+      }
     }
-  }, []);
+  }, [user, syncEnabled]);
 
-  const pauseTimer = useCallback((id: string) => {
-    TimerService.pause(id);
-  }, []);
+  const pauseTimer = useCallback(async (id: string) => {
+    const timer = TimerService.pause(id);
+    if (timer) {
+      // Sync to Firestore
+      if (user && syncEnabled) {
+        try {
+          await FirestoreService.updateTimer(id, { status: TimerStatus.PAUSED });
+        } catch (error) {
+          console.error('Error syncing pause timer:', error);
+        }
+      }
+    }
+  }, [user, syncEnabled]);
 
-  const resetTimer = useCallback((id: string) => {
-    TimerService.reset(id);
-  }, []);
+  const resetTimer = useCallback(async (id: string) => {
+    const timer = TimerService.reset(id);
+    if (timer) {
+      // Sync to Firestore
+      if (user && syncEnabled) {
+        try {
+          await FirestoreService.updateTimer(id, {
+            status: TimerStatus.IDLE,
+            currentSegmentIndex: 0,
+            currentRepeat: 1,
+            remainingTime: timer.remainingTime,
+            totalElapsedTime: 0
+          });
+        } catch (error) {
+          console.error('Error syncing reset timer:', error);
+        }
+      }
+    }
+  }, [user, syncEnabled]);
 
   const value: TimerContextValue = React.useMemo(() => ({
     timers,

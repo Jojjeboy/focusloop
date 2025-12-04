@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import {
   CssBaseline,
   ThemeProvider,
@@ -7,18 +7,7 @@ import {
   Box,
   AppBar,
   Toolbar,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import TimerIcon from '@mui/icons-material/Timer';
-import SettingsIcon from '@mui/icons-material/Settings';
-import NoteIcon from '@mui/icons-material/Note';
 import { TimerProvider, AuthProvider, NoteProvider } from './core/context';
 import { TimersPage } from './features/timers';
 import { SettingsPage } from './features/settings';
@@ -40,9 +29,7 @@ const AppLayout = () => {
     return false;
   });
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     if (darkMode) {
@@ -74,17 +61,6 @@ const AppLayout = () => {
     },
   });
 
-  const menuItems = [
-    { path: '/timers', label: 'Timers', icon: <TimerIcon /> },
-    { path: '/notes', label: 'Notes', icon: <NoteIcon /> },
-    { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
-  ];
-
-  const handleNavigate = (path: string) => {
-    navigate(path);
-    setDrawerOpen(false);
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -92,46 +68,17 @@ const AppLayout = () => {
         {/* App Bar */}
         <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Toolbar>
-            <IconButton
-              size="large"
-              edge="start"
-              aria-label="menu"
-              sx={{ mr: 2, color: 'text.primary' }}
-              onClick={() => setDrawerOpen(true)}
-            >
-              <MenuIcon />
-            </IconButton>
-
             {/* Logo instead of text */}
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-              <img src={Logo} alt="FocusLoop" style={{ height: '32px' }} />
+            <Box
+              sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => navigate('/')}
+            >
+              <img src={Logo} alt="FocusLoop" style={{ height: '48px' }} />
             </Box>
 
             <ProfileMenu darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
           </Toolbar>
         </AppBar>
-
-        {/* Navigation Drawer */}
-        <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <Box
-            sx={{ width: 250 }}
-            role="presentation"
-          >
-            <List>
-              {menuItems.map((item) => (
-                <ListItem key={item.path} disablePadding>
-                  <ListItemButton
-                    selected={location.pathname === item.path}
-                    onClick={() => handleNavigate(item.path)}
-                  >
-                    <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.label} />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-        </Drawer>
 
         {/* Main Content */}
         <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>

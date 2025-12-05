@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Container, Typography, IconButton, Fab } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useTimers } from '../../../core/context/TimerContext';
-import { StatsCards, TimerCard, CreateTimerWizard } from '../components';
+import { TimerCard, CreateTimerWizard } from '../components';
 import { TimerType, TimerCombination } from '../../../core/models/TimerCombination';
 
 // Definiera strukturen för datat som kommer från formuläret/wizard
@@ -27,13 +27,6 @@ export const TimersPage: React.FC = () => {
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingTimer, setEditingTimer] = useState<TimerCombination | null>(null);
-
-  // Calculate stats
-  const activeCount = timers.filter(t => t.status === 'RUNNING' || t.status === 'PAUSED').length;
-  const completedCount = timers.filter(t => t.status === 'COMPLETED').length;
-  const totalTimeHours = Math.floor(
-    timers.reduce((acc, t) => acc + t.totalElapsedTime, 0) / 3600
-  );
 
   // Color scheme for different timer types
   const timerColors = ['#9333EA', '#10B981', '#F59E0B', '#EC4899', '#06B6D4'];
@@ -109,16 +102,6 @@ export const TimersPage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Container maxWidth="md" sx={{ py: 3 }}>
-        {/* Header */}
-
-
-        {/* Stats Cards */}
-        <StatsCards
-          activeCount={activeCount}
-          completedCount={completedCount}
-          totalTime={`${totalTimeHours}h`}
-        />
-
         {/* Section Title */}
         <Typography
           variant="h6"

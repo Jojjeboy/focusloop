@@ -373,11 +373,8 @@ class TimerServiceClass {
       return undefined;
     }
 
-    const newRemainingTime = Math.max(0, timer.remainingTime - 1);
-    const newTotalElapsedTime = timer.totalElapsedTime + 1;
-
-    // If current segment is complete, move to next
-    if (newRemainingTime === 0) {
+    // If timer is already at 0, perform transition logic
+    if (timer.remainingTime === 0) {
       // Vibrate for 2 seconds
       if (navigator.vibrate) {
         navigator.vibrate(2000);
@@ -415,6 +412,10 @@ class TimerServiceClass {
       }
       return nextTimer;
     }
+
+    // Otherwise decrement
+    const newRemainingTime = Math.max(0, timer.remainingTime - 1);
+    const newTotalElapsedTime = timer.totalElapsedTime + 1;
 
     return this.update(id, {
       remainingTime: newRemainingTime,

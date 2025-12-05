@@ -22,6 +22,7 @@ export const NoteProvider: React.FC<NoteProviderProps> = ({ children }) => {
 
         try {
             const firestoreNotes = await FirestoreService.getUserNotes(user.uid);
+            const firebaseNoteIds = new Set(firestoreNotes.map(n => n.id));
 
             // Smart merge: prefer local notes over stale Firestore data
             firestoreNotes.forEach(firestoreNote => {
@@ -51,6 +52,14 @@ export const NoteProvider: React.FC<NoteProviderProps> = ({ children }) => {
                 }
             });
 
+            // Remove local notes that don't exist in Firebase
+            const localNotes = NoteService.getAll();
+            localNotes.forEach(localNote => {
+                if (!firebaseNoteIds.has(localNote.id)) {
+                    NoteService.delete(localNote.id);
+                }
+            });
+
             setNotes(NoteService.getAll());
         } catch (error) {
             console.error('Error loading notes from Firestore:', error);
@@ -76,22 +85,47 @@ export const NoteProvider: React.FC<NoteProviderProps> = ({ children }) => {
         };
     }, []);
 
+    // Clear local notes when user logs out
+    useEffect(() => {
+        if (!authLoading && !user) {
+            // User logged out, clear local notes
+            NoteService.clear();
+            setNotes([]);
+        }
+    }, [user, authLoading]);
+
     const createNote = useCallback(async (
         data: CreateNoteDto
     ): Promise<Note> => {
-        // Create locally first
-        const note = NoteService.create(data);
-
-        // Sync to Firestore if user is authenticated
+        // If user is authenticated, create in Firestore first to get the ID
         if (user && syncEnabled) {
             try {
-                await FirestoreService.createNote(user.uid, data);
+                const firebaseId = await FirestoreService.createNote(user.uid, data);
+
+                // Create locally with the same Firebase ID
+                const now = new Date();
+                const note: Note = {
+                    id: firebaseId,
+                    title: data.title,
+                    content: data.content,
+                    completed: false,
+                    createdAt: now,
+                    updatedAt: now,
+                };
+
+                NoteService.notes.set(firebaseId, note);
+                NoteService['notifyListeners']();
+
+                return note;
             } catch (error) {
                 console.error('Error creating note in Firestore:', error);
+                // Fall back to local-only creation if Firebase fails
+                return NoteService.create(data);
             }
+        } else {
+            // User not authenticated, create locally only
+            return NoteService.create(data);
         }
-
-        return note;
     }, [user, syncEnabled]);
 
     const updateNote = useCallback(async (id: string, data: UpdateNoteDto) => {

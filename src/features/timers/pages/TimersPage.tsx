@@ -95,6 +95,17 @@ export const TimersPage: React.FC = () => {
     setEditingTimer(null);
   };
 
+  const wizardInitialData = React.useMemo(() => {
+    if (!editingTimer) return null;
+    return {
+      name: editingTimer.name,
+      category: editingTimer.description?.split(' ')[0] || 'Work',
+      workDuration: editingTimer.segments[0].duration,
+      restDuration: editingTimer.segments[1]?.duration || 300,
+      rounds: editingTimer.repeatCount
+    };
+  }, [editingTimer]);
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#FAFBFC' }}>
       <Container maxWidth="sm" sx={{ py: 3 }}>
@@ -195,13 +206,7 @@ export const TimersPage: React.FC = () => {
         open={createDialogOpen}
         onClose={handleCloseDialog}
         onCreate={handleCreateOrUpdateTimer}
-        initialData={editingTimer ? {
-          name: editingTimer.name,
-          category: editingTimer.description?.split(' ')[0] || 'Work',
-          workDuration: editingTimer.segments[0].duration,
-          restDuration: editingTimer.segments[1]?.duration || 300,
-          rounds: editingTimer.repeatCount
-        } : null}
+        initialData={wizardInitialData}
       />
     </Box>
   );

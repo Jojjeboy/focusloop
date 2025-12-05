@@ -37,7 +37,7 @@ export interface TimerCombination {
   totalElapsedTime: number; // Total elapsed time for all segments
   createdAt: Date;
   updatedAt: Date;
-  pausedAt?: Date;
+  pausedAt?: Date | null; // NU TILLÅTS NULL
 }
 
 export interface CreateTimerCombinationDto {

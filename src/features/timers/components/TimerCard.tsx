@@ -106,10 +106,11 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                         {timer.name}
                     </Typography>
 
-                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch' }}>
                         {timer.segments.map((segment, index) => {
                             const isActive = index === timer.currentSegmentIndex;
                             const timeToShow = isActive ? timer.remainingTime : segment.duration;
+                            const originalDuration = segment.duration;
 
                             return (
                                 <Box
@@ -117,20 +118,53 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                                     sx={{
                                         textAlign: 'center',
                                         opacity: isActive ? 1 : 0.5,
-                                        transition: 'all 0.3s ease'
+                                        transition: 'all 0.3s ease',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'center',
+                                        minWidth: 80,
                                     }}
                                 >
+                                    <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
+                                        <Typography
+                                            variant={isActive ? "h5" : "h6"}
+                                            sx={{
+                                                fontWeight: isActive ? 800 : 600,
+                                                color: isActive ? color : 'text.secondary',
+                                                lineHeight: 1,
+                                                fontFeatureSettings: "'tnum'",
+                                                fontVariantNumeric: 'tabular-nums',
+                                            }}
+                                        >
+                                            {Math.floor(timeToShow / 60)}:{(timeToShow % 60).toString().padStart(2, '0')}
+                                        </Typography>
+
+                                        {isActive && (
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    color: 'text.disabled',
+                                                    fontWeight: 500,
+                                                    fontSize: '0.75rem',
+                                                }}
+                                            >
+                                                / {Math.floor(originalDuration / 60)}:{(originalDuration % 60).toString().padStart(2, '0')}
+                                            </Typography>
+                                        )}
+                                    </Box>
+
                                     <Typography
-                                        variant={isActive ? "h4" : "h6"}
+                                        variant="caption"
                                         sx={{
-                                            fontWeight: 700,
+                                            display: 'block',
                                             color: isActive ? color : 'text.secondary',
-                                            lineHeight: 1
+                                            fontSize: '0.75rem',
+                                            mt: 0.5,
+                                            fontWeight: isActive ? 700 : 500,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em'
                                         }}
                                     >
-                                        {Math.floor(timeToShow / 60)}:{(timeToShow % 60).toString().padStart(2, '0')}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.7rem', mt: 0.5 }}>
                                         {segment.label}
                                     </Typography>
                                 </Box>

@@ -3,7 +3,7 @@ import { Box, Container, Typography, IconButton, Fab } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useTimers } from '../../../core/context/TimerContext';
 import { TimerCard, CreateTimerWizard } from '../components';
-import { TimerType, TimerCombination } from '../../../core/models/TimerCombination';
+import { TimerType, TimerCombination, TimerStatus } from '../../../core/models/TimerCombination';
 
 // Definiera strukturen för datat som kommer från formuläret/wizard
 interface TimerFormData {
@@ -23,6 +23,7 @@ export const TimersPage: React.FC = () => {
     createTimer,
     updateTimer,
     deleteTimer,
+    archiveTimer,
   } = useTimers();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -83,6 +84,10 @@ export const TimersPage: React.FC = () => {
     }
   };
 
+  const handleArchiveTimer = async (id: string) => {
+    await archiveTimer(id);
+  };
+
   const handleCloseDialog = () => {
     setCreateDialogOpen(false);
     setEditingTimer(null);
@@ -99,10 +104,14 @@ export const TimersPage: React.FC = () => {
     };
   }, [editingTimer]);
 
+  const activeTimers = timers.filter(t => t.status !== TimerStatus.ARCHIVED);
+  const finishedTimers = timers.filter(t => t.status === TimerStatus.ARCHIVED);
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Container maxWidth="md" sx={{ py: 3 }}>
-        {/* Section Title */}
+
+        {/* Active Timers Section */}
         <Typography
           variant="h6"
           sx={{
@@ -116,8 +125,7 @@ export const TimersPage: React.FC = () => {
           Active Timers
         </Typography>
 
-        {/* Timer Cards */}
-        {timers.length === 0 ? (
+        {activeTimers.length === 0 ? (
           <Box
             sx={{
               textAlign: 'center',
@@ -129,10 +137,10 @@ export const TimersPage: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 1, color: 'text.secondary' }}>
-              No timers yet
+              No active timers
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-              Create your first timer to get started
+              Create a timer to get started
             </Typography>
             <IconButton
               onClick={() => setCreateDialogOpen(true)}
@@ -150,8 +158,8 @@ export const TimersPage: React.FC = () => {
             </IconButton>
           </Box>
         ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
-            {timers.map((timer, index) => (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, mb: 6 }}>
+            {activeTimers.map((timer, index) => (
               <TimerCard
                 key={timer.id}
                 timer={timer}
@@ -160,10 +168,42 @@ export const TimersPage: React.FC = () => {
                 onReset={() => resetTimer(timer.id)}
                 onEdit={() => handleEditTimer(timer)}
                 onDelete={() => handleDeleteTimer(timer.id)}
+                onArchive={() => handleArchiveTimer(timer.id)}
                 color={timerColors[index % timerColors.length]}
               />
             ))}
           </Box>
+        )}
+
+        {/* Finished Timers Section */}
+        {finishedTimers.length > 0 && (
+          <>
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 2,
+                fontWeight: 700,
+                color: 'text.secondary',
+              }}
+            >
+              Finished
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, opacity: 0.8 }}>
+              {finishedTimers.map((timer, index) => (
+                <TimerCard
+                  key={timer.id}
+                  timer={timer}
+                  onStart={() => startTimer(timer.id)}
+                  onPause={() => pauseTimer(timer.id)}
+                  onReset={() => resetTimer(timer.id)}
+                  onEdit={() => handleEditTimer(timer)}
+                  onDelete={() => handleDeleteTimer(timer.id)}
+                  onArchive={() => handleArchiveTimer(timer.id)}
+                  color={timerColors[index % timerColors.length]}
+                />
+              ))}
+            </Box>
+          </>
         )}
 
         {/* Floating Action Button for mobile */}

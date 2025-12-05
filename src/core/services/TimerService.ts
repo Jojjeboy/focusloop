@@ -93,8 +93,13 @@ class TimerServiceClass {
               // is calculated when the timer is resumed in the `start()` method.
               break;
 
-            case TimerStatus.IDLE:
             case TimerStatus.COMPLETED:
+              // If a timer was completed before reload, move it to archived state
+              hydratedTimer.status = TimerStatus.ARCHIVED;
+              break;
+
+            case TimerStatus.IDLE:
+            case TimerStatus.ARCHIVED:
               // These are inactive states, no special handling needed on load.
               break;
           }
@@ -329,6 +334,20 @@ class TimerServiceClass {
       this.stopTicking();
     }
     return updatedTimer;
+  }
+
+  /**
+   * Archive a timer
+   */
+  archive(id: string): TimerCombination | undefined {
+    const timer = this.timers.get(id);
+    if (!timer) {
+      return undefined;
+    }
+
+    return this.update(id, {
+      status: TimerStatus.ARCHIVED,
+    });
   }
 
   /**

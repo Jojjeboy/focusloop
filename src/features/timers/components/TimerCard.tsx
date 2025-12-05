@@ -16,6 +16,7 @@ interface TimerCardProps {
     onReset: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onArchive?: () => void;
     color: string;
 }
 
@@ -26,6 +27,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     onReset,
     onEdit,
     onDelete,
+    onArchive,
     color,
 }) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -261,29 +263,54 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
                     {/* Action Buttons */}
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Box
-                            onClick={isRunning ? onPause : onStart}
-                            sx={{
-                                flex: 1,
-                                py: 1.5,
-                                borderRadius: 2,
-                                background: isRunning ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-                                },
-                            }}
-                        >
-                            {isRunning ? <PauseIcon sx={{ color: 'white', mr: 0.5 }} /> : <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />}
-                            <Typography sx={{ color: 'white', fontWeight: 600 }}>
-                                {isRunning ? 'Pause' : 'Start'}
-                            </Typography>
-                        </Box>
+                        {timer.status === TimerStatus.COMPLETED ? (
+                            <Box
+                                onClick={onArchive}
+                                sx={{
+                                    flex: 1,
+                                    py: 1.5,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        transform: 'translateY(-1px)',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                                    },
+                                }}
+                            >
+                                <Typography sx={{ color: 'white', fontWeight: 600 }}>
+                                    Archive
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Box
+                                onClick={isRunning ? onPause : onStart}
+                                sx={{
+                                    flex: 1,
+                                    py: 1.5,
+                                    borderRadius: 2,
+                                    background: isRunning ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        transform: 'translateY(-1px)',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                                    },
+                                }}
+                            >
+                                {isRunning ? <PauseIcon sx={{ color: 'white', mr: 0.5 }} /> : <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />}
+                                <Typography sx={{ color: 'white', fontWeight: 600 }}>
+                                    {isRunning ? 'Pause' : 'Start'}
+                                </Typography>
+                            </Box>
+                        )}
                         <IconButton
                             onClick={onReset}
                             sx={{

@@ -14,6 +14,7 @@ export enum TimerStatus {
   RUNNING = 'RUNNING',
   PAUSED = 'PAUSED',
   COMPLETED = 'COMPLETED',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export interface TimerSegment {

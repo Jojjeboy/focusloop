@@ -215,7 +215,8 @@ describe('TimerService', () => {
       });
 
       TimerService.start(timer.id);
-      const ticked = TimerService.tick(timer.id);
+      TimerService.tick(timer.id); // Tick to 0
+      const ticked = TimerService.tick(timer.id); // Tick to transition
 
       expect(ticked).toBeDefined();
       expect(ticked?.currentSegmentIndex).toBe(1);
@@ -230,7 +231,8 @@ describe('TimerService', () => {
       });
 
       TimerService.start(timer.id);
-      const completed = TimerService.tick(timer.id);
+      TimerService.tick(timer.id); // Tick to 0
+      const completed = TimerService.tick(timer.id); // Tick to complete
 
       expect(completed).toBeDefined();
       expect(completed?.status).toBe(TimerStatus.COMPLETED);
@@ -244,7 +246,8 @@ describe('TimerService', () => {
       });
 
       TimerService.start(timer.id);
-      const nextRepeat = TimerService.tick(timer.id);
+      TimerService.tick(timer.id); // Tick to 0
+      const nextRepeat = TimerService.tick(timer.id); // Tick to next repeat
 
       expect(nextRepeat).toBeDefined();
       expect(nextRepeat?.currentRepeat).toBe(2);

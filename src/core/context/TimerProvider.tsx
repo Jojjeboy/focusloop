@@ -232,6 +232,22 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     }
   }, [user, syncEnabled]);
 
+  const archiveTimer = useCallback(async (id: string) => {
+    const timer = TimerService.archive(id);
+    if (timer) {
+      // Sync to Firestore
+      if (user && syncEnabled) {
+        try {
+          await FirestoreService.updateTimer(id, {
+            status: TimerStatus.ARCHIVED,
+          });
+        } catch (error) {
+          console.error('Error syncing archive timer:', error);
+        }
+      }
+    }
+  }, [user, syncEnabled]);
+
   const value: TimerContextValue = React.useMemo(() => ({
     timers,
     activeTimer, // Detta är nu den deriverade (computed) variabeln
@@ -242,6 +258,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     startTimer,
     pauseTimer,
     resetTimer,
+    archiveTimer,
     refreshTimers,
   }), [
     timers,
@@ -253,6 +270,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     startTimer,
     pauseTimer,
     resetTimer,
+    archiveTimer,
     refreshTimers,
   ]);
 

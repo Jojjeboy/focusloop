@@ -27,6 +27,7 @@ export interface TimerContextValue {
     startTimer: (id: string) => void;
     pauseTimer: (id: string) => void;
     resetTimer: (id: string) => void;
+    archiveTimer: (id: string) => Promise<void>;
     refreshTimers: () => Promise<void>;
 }
 

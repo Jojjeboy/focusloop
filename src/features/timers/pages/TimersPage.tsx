@@ -107,8 +107,8 @@ export const TimersPage: React.FC = () => {
   }, [editingTimer]);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#FAFBFC' }}>
-      <Container maxWidth="sm" sx={{ py: 3 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Container maxWidth="md" sx={{ py: 3 }}>
         {/* Header */}
 
 
@@ -121,17 +121,16 @@ export const TimersPage: React.FC = () => {
 
         {/* Section Title */}
         <Typography
-          variant="overline"
+          variant="h6"
           sx={{
-            display: 'block',
             mb: 2,
             fontWeight: 700,
-            fontSize: '0.75rem',
-            letterSpacing: 1,
-            color: '#6B7280',
+            background: 'linear-gradient(to right, #2563EB, #9333EA)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
           }}
         >
-          ACTIVE TIMERS
+          Active Timers
         </Typography>
 
         {/* Timer Cards */}
@@ -168,18 +167,20 @@ export const TimersPage: React.FC = () => {
             </IconButton>
           </Box>
         ) : (
-          timers.map((timer, index) => (
-            <TimerCard
-              key={timer.id}
-              timer={timer}
-              onStart={() => startTimer(timer.id)}
-              onPause={() => pauseTimer(timer.id)}
-              onReset={() => resetTimer(timer.id)}
-              onEdit={() => handleEditTimer(timer)}
-              onDelete={() => handleDeleteTimer(timer.id)}
-              color={timerColors[index % timerColors.length]}
-            />
-          ))
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            {timers.map((timer, index) => (
+              <TimerCard
+                key={timer.id}
+                timer={timer}
+                onStart={() => startTimer(timer.id)}
+                onPause={() => pauseTimer(timer.id)}
+                onReset={() => resetTimer(timer.id)}
+                onEdit={() => handleEditTimer(timer)}
+                onDelete={() => handleDeleteTimer(timer.id)}
+                color={timerColors[index % timerColors.length]}
+              />
+            ))}
+          </Box>
         )}
 
         {/* Floating Action Button for mobile */}
@@ -190,9 +191,9 @@ export const TimersPage: React.FC = () => {
             position: 'fixed',
             bottom: 24,
             right: 24,
-            background: 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)',
+            background: 'linear-gradient(135deg, #2563EB 0%, #9333EA 100%)',
             '&:hover': {
-              background: 'linear-gradient(135deg, #7E22CE 0%, #6B21A8 100%)',
+              background: 'linear-gradient(135deg, #1D4ED8 0%, #7E22CE 100%)',
             },
           }}
           onClick={() => setCreateDialogOpen(true)}

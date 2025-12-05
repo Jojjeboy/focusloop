@@ -4,7 +4,6 @@ import {
     Typography,
     Box,
     Button,
-    Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNotes } from '../../../core/context/NoteContext';
@@ -48,7 +47,12 @@ export const NotesPage: React.FC = () => {
     return (
         <Container maxWidth="md" sx={{ py: 4 }}>
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+                <Typography variant="h5" component="h1" sx={{
+                    fontWeight: 700,
+                    background: 'linear-gradient(to right, #2563EB, #9333EA)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                }}>
                     Anteckningar
                 </Typography>
                 <Button
@@ -76,7 +80,7 @@ export const NotesPage: React.FC = () => {
                     </Typography>
                 </Box>
             ) : (
-                <Stack spacing={1}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
                     {notes.map((note) => (
                         <NoteAccordionItem
                             key={note.id}
@@ -86,7 +90,7 @@ export const NotesPage: React.FC = () => {
                             onDelete={handleDelete}
                         />
                     ))}
-                </Stack>
+                </Box>
             )}
 
             <NoteDialog

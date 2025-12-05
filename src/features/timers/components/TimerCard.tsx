@@ -1,11 +1,12 @@
-import React from 'react';
-import { Box, Typography, IconButton, Chip, CircularProgress, Menu, MenuItem } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, IconButton, Chip, CircularProgress, Menu, MenuItem, Collapse } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TimerCombination, TimerStatus } from '../../../core/models/TimerCombination';
 
 interface TimerCardProps {
@@ -27,10 +28,12 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     onDelete,
     color,
 }) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [expanded, setExpanded] = useState(false);
     const open = Boolean(anchorEl);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
         setAnchorEl(event.currentTarget);
     };
 
@@ -46,6 +49,10 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     const handleDelete = () => {
         handleMenuClose();
         onDelete();
+    };
+
+    const handleToggleExpand = () => {
+        setExpanded(!expanded);
     };
 
     const formatTime = (seconds: number) => {
@@ -68,162 +75,230 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     return (
         <Box
             sx={{
-                p: 3,
-                borderRadius: 3,
+                borderRadius: 3, // 12px
                 bgcolor: 'background.paper',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: 1,
                 mb: 2,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                    boxShadow: 3,
+                    transform: 'translateY(-2px)',
+                },
             }}
         >
-            {/* Header */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+            {/* Collapsed Header - Always Visible */}
+            <Box
+                onClick={handleToggleExpand}
+                sx={{
+                    p: 2,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                }}
+            >
+                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mr: 2 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {timer.name}
                     </Typography>
-                    <Chip
-                        label={`${currentSegment?.label || 'Focus'} • ${formatDuration(segmentDuration)}`}
-                        size="small"
-                        sx={{
-                            height: 24,
-                            fontSize: '0.75rem',
-                            background: `${color}20`,
-                            color: color,
-                            fontWeight: 500,
-                        }}
-                    />
-                </Box>
-                <IconButton size="small" onClick={handleMenuClick}>
-                    <MoreVertIcon />
-                </IconButton>
-                <Menu
-                    anchorEl={anchorEl}
-                    open={open}
-                    onClose={handleMenuClose}
-                    PaperProps={{
-                        elevation: 1,
-                        sx: { borderRadius: 2, minWidth: 120 }
-                    }}
-                >
-                    <MenuItem onClick={handleEdit} sx={{ fontSize: '0.875rem' }}>
-                        <EditIcon fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
-                        Edit
-                    </MenuItem>
-                    <MenuItem onClick={handleDelete} sx={{ fontSize: '0.875rem', color: 'error.main' }}>
-                        <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />
-                        Delete
-                    </MenuItem>
-                </Menu>
-            </Box>
 
-            {/* Circular Progress */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, position: 'relative' }}>
-                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                    <CircularProgress
-                        variant="determinate"
-                        value={100}
-                        size={140}
-                        thickness={4}
-                        sx={{ color: '#f0f0f0' }}
-                    />
-                    <CircularProgress
-                        variant="determinate"
-                        value={progress}
-                        size={140}
-                        thickness={4}
-                        sx={{
-                            color: color,
-                            position: 'absolute',
-                            left: 0,
-                            transform: 'rotate(-90deg) !important',
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            top: 0,
-                            left: 0,
-                            bottom: 0,
-                            right: 0,
-                            position: 'absolute',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                            {Math.floor(timer.remainingTime / 60)}:{(timer.remainingTime % 60).toString().padStart(2, '0')}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                            remaining
-                        </Typography>
+                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                        {timer.segments.map((segment, index) => {
+                            const isActive = index === timer.currentSegmentIndex;
+                            const timeToShow = isActive ? timer.remainingTime : segment.duration;
+
+                            return (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        textAlign: 'center',
+                                        opacity: isActive ? 1 : 0.5,
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    <Typography
+                                        variant={isActive ? "h4" : "h6"}
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: isActive ? color : 'text.secondary',
+                                            lineHeight: 1
+                                        }}
+                                    >
+                                        {Math.floor(timeToShow / 60)}:{(timeToShow % 60).toString().padStart(2, '0')}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', fontSize: '0.7rem', mt: 0.5 }}>
+                                        {segment.label}
+                                    </Typography>
+                                </Box>
+                            );
+                        })}
                     </Box>
                 </Box>
-            </Box>
 
-            {/* Stats */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-around', mb: 2 }}>
-                <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {timer.currentRepeat}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                        Sessions
-                    </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {formatTime(timer.totalElapsedTime)}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                        Total Time
-                    </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {Math.round(progress)}%
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                        Completion
-                    </Typography>
-                </Box>
-            </Box>
-
-            {/* Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 1 }}>
-                <Box
-                    onClick={isRunning ? onPause : onStart}
-                    sx={{
-                        flex: 1,
-                        py: 1.5,
-                        borderRadius: 2,
-                        background: isRunning ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s, background 0.3s',
-                        '&:hover': {
-                            transform: 'translateY(-2px)',
-                        },
-                    }}
-                >
-                    {isRunning ? <PauseIcon sx={{ color: 'white', mr: 0.5 }} /> : <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />}
-                    <Typography sx={{ color: 'white', fontWeight: 600 }}>
-                        {isRunning ? 'Pause' : 'Start'}
-                    </Typography>
-                </Box>
                 <IconButton
-                    onClick={onReset}
                     sx={{
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 2,
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s',
                     }}
                 >
-                    <RefreshIcon />
+                    <ExpandMoreIcon />
                 </IconButton>
             </Box>
+
+            {/* Expanded Content */}
+            <Collapse in={expanded}>
+                <Box sx={{ px: 3, pb: 3 }}>
+                    {/* Segment Info and Menu */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Chip
+                            label={`${currentSegment?.label || 'Focus'} • ${formatDuration(segmentDuration)}`}
+                            size="small"
+                            sx={{
+                                height: 24,
+                                fontSize: '0.75rem',
+                                background: `${color}20`,
+                                color: color,
+                                fontWeight: 500,
+                            }}
+                        />
+                        <IconButton size="small" onClick={handleMenuClick}>
+                            <MoreVertIcon />
+                        </IconButton>
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={open}
+                            onClose={handleMenuClose}
+                            slotProps={{
+                                paper: {
+                                    elevation: 1,
+                                    sx: { borderRadius: 2, minWidth: 120 }
+                                }
+                            }}
+                        >
+                            <MenuItem onClick={handleEdit} sx={{ fontSize: '0.875rem' }}>
+                                <EditIcon fontSize="small" sx={{ mr: 1.5, color: 'text.secondary' }} />
+                                Edit
+                            </MenuItem>
+                            <MenuItem onClick={handleDelete} sx={{ fontSize: '0.875rem', color: 'error.main' }}>
+                                <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />
+                                Delete
+                            </MenuItem>
+                        </Menu>
+                    </Box>
+
+                    {/* Circular Progress */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, position: 'relative' }}>
+                        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                            <CircularProgress
+                                variant="determinate"
+                                value={100}
+                                size={140}
+                                thickness={4}
+                                sx={{ color: '#f0f0f0' }}
+                            />
+                            <CircularProgress
+                                variant="determinate"
+                                value={progress}
+                                size={140}
+                                thickness={4}
+                                sx={{
+                                    color: color,
+                                    position: 'absolute',
+                                    left: 0,
+                                    transform: 'rotate(-90deg) !important',
+                                    strokeLinecap: 'round',
+                                }}
+                            />
+                            <Box
+                                sx={{
+                                    top: 0,
+                                    left: 0,
+                                    bottom: 0,
+                                    right: 0,
+                                    position: 'absolute',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                                    remaining
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    {/* Stats */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-around', mb: 2 }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                {timer.currentRepeat}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                                Sessions
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                {formatTime(timer.totalElapsedTime)}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                                Total Time
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                {Math.round(progress)}%
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                                Completion
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {/* Action Buttons */}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Box
+                            onClick={isRunning ? onPause : onStart}
+                            sx={{
+                                flex: 1,
+                                py: 1.5,
+                                borderRadius: 2,
+                                background: isRunning ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                                },
+                            }}
+                        >
+                            {isRunning ? <PauseIcon sx={{ color: 'white', mr: 0.5 }} /> : <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />}
+                            <Typography sx={{ color: 'white', fontWeight: 600 }}>
+                                {isRunning ? 'Pause' : 'Start'}
+                            </Typography>
+                        </Box>
+                        <IconButton
+                            onClick={onReset}
+                            sx={{
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                borderRadius: 2,
+                            }}
+                        >
+                            <RefreshIcon />
+                        </IconButton>
+                    </Box>
+                </Box>
+            </Collapse>
         </Box>
     );
 };
+
+export default TimerCard;

@@ -67,14 +67,54 @@ export const NoteProvider: React.FC<NoteProviderProps> = ({ children }) => {
         }
     }, [user, syncEnabled]);
 
-    // Initial/Auth-klar synkronisering
-    React.useLayoutEffect(() => {
-        if (!authLoading && user && syncEnabled) {
-            void refreshNotes();
+    // Set up real-time listener for Firestore changes
+    useEffect(() => {
+        if (!user || !syncEnabled) {
+            return;
         }
-    }, [authLoading, user, syncEnabled, refreshNotes]);
 
-    // Subscribe to service changes
+        // Subscribe to real-time updates
+        const unsubscribe = FirestoreService.subscribeToUserNotes(user.uid, (firestoreNotes) => {
+            // Sync Firestore notes to local storage
+            const firebaseNoteIds = new Set(firestoreNotes.map(n => n.id));
+
+            // Update or add notes from Firestore
+            firestoreNotes.forEach(firestoreNote => {
+                const localNote = NoteService.getById(firestoreNote.id);
+
+                if (localNote) {
+                    // Compare timestamps to determine which version is more recent
+                    const localUpdatedAt = new Date(localNote.updatedAt).getTime();
+                    const firestoreUpdatedAt = new Date(firestoreNote.updatedAt).getTime();
+
+                    // If Firestore is newer or same, update local
+                    if (firestoreUpdatedAt >= localUpdatedAt) {
+                        NoteService.notes.set(firestoreNote.id, firestoreNote);
+                    }
+                } else {
+                    // Note doesn't exist locally - add it from Firestore
+                    NoteService.notes.set(firestoreNote.id, firestoreNote);
+                }
+            });
+
+            // Remove local notes that don't exist in Firebase (deleted on another device)
+            const localNotes = NoteService.getAll();
+            localNotes.forEach(localNote => {
+                if (!firebaseNoteIds.has(localNote.id)) {
+                    NoteService.notes.delete(localNote.id);
+                }
+            });
+
+            // Trigger update
+            NoteService['notifyListeners']();
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, [user, syncEnabled]);
+
+    // Subscribe to service changes and update React state
     useEffect(() => {
         const unsubscribe = NoteService.subscribe(() => {
             setNotes(NoteService.getAll());
@@ -85,12 +125,12 @@ export const NoteProvider: React.FC<NoteProviderProps> = ({ children }) => {
         };
     }, []);
 
-    // Clear local notes when user logs out
+    // Clear local notes when user logs out (The service listener will update state)
     useEffect(() => {
         if (!authLoading && !user) {
             // User logged out, clear local notes
             NoteService.clear();
-            setNotes([]);
+            // setNotes([]) is no longer needed here as NoteService.clear() should trigger the subscription above
         }
     }, [user, authLoading]);
 

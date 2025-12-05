@@ -9,6 +9,7 @@ import {
     query,
     where,
     serverTimestamp,
+    onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { TimerCombination } from '../core/models/TimerCombination';
@@ -153,6 +154,42 @@ export class FirestoreService {
         } catch (error) {
             console.error('Error getting notes:', error);
             return [];
+        }
+    }
+
+    /**
+     * Subscribe to real-time note updates for a user
+     * Returns an unsubscribe function
+     */
+    static subscribeToUserNotes(
+        userId: string,
+        callback: (notes: Note[]) => void
+    ): () => void {
+        try {
+            const notesRef = collection(db, NOTES_COLLECTION);
+            const q = query(notesRef, where('userId', '==', userId));
+
+            const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                const notes: Note[] = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    notes.push({
+                        ...data,
+                        id: doc.id,
+                        createdAt: data.createdAt?.toDate?.() || new Date(),
+                        updatedAt: data.updatedAt?.toDate?.() || new Date(),
+                    } as Note);
+                });
+
+                callback(notes);
+            }, (error) => {
+                console.error('Error in notes snapshot listener:', error);
+            });
+
+            return unsubscribe;
+        } catch (error) {
+            console.error('Error setting up notes listener:', error);
+            return () => { }; // Return a no-op unsubscribe function
         }
     }
 

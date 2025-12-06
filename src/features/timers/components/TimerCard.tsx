@@ -72,7 +72,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
     const currentSegment = timer.segments[timer.currentSegmentIndex];
     const segmentDuration = currentSegment ? currentSegment.duration : 1;
-    const progress = ((segmentDuration - timer.remainingTime) / segmentDuration) * 100;
+    const progress = (timer.remainingTime / segmentDuration) * 100;
 
     return (
         <Box

@@ -96,91 +96,93 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 sx={{
                     p: 2,
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
+                    flexDirection: 'column', // Changed to column
                     cursor: 'pointer',
                 }}
             >
-                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mr: 2 }}>
+                {/* Row 1: Title and Expand Arrow */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mb: 2 }}>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {timer.name}
                     </Typography>
 
-                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch' }}>
-                        {timer.segments.map((segment, index) => {
-                            const isActive = index === timer.currentSegmentIndex;
-                            const timeToShow = isActive ? timer.remainingTime : segment.duration;
-                            const originalDuration = segment.duration;
-
-                            return (
-                                <Box
-                                    key={index}
-                                    sx={{
-                                        textAlign: 'center',
-                                        opacity: isActive ? 1 : 0.5,
-                                        transition: 'all 0.3s ease',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        minWidth: 80,
-                                    }}
-                                >
-                                    <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
-                                        <Typography
-                                            variant={isActive ? "h5" : "h6"}
-                                            sx={{
-                                                fontWeight: isActive ? 800 : 600,
-                                                color: isActive ? color : 'text.secondary',
-                                                lineHeight: 1,
-                                                fontFeatureSettings: "'tnum'",
-                                                fontVariantNumeric: 'tabular-nums',
-                                            }}
-                                        >
-                                            {Math.floor(timeToShow / 60)}:{(timeToShow % 60).toString().padStart(2, '0')}
-                                        </Typography>
-
-                                        {isActive && (
-                                            <Typography
-                                                variant="caption"
-                                                sx={{
-                                                    color: 'text.disabled',
-                                                    fontWeight: 500,
-                                                    fontSize: '0.75rem',
-                                                }}
-                                            >
-                                                / {Math.floor(originalDuration / 60)}:{(originalDuration % 60).toString().padStart(2, '0')}
-                                            </Typography>
-                                        )}
-                                    </Box>
-
-                                    <Typography
-                                        variant="caption"
-                                        sx={{
-                                            display: 'block',
-                                            color: isActive ? color : 'text.secondary',
-                                            fontSize: '0.75rem',
-                                            mt: 0.5,
-                                            fontWeight: isActive ? 700 : 500,
-                                            textTransform: 'uppercase',
-                                            letterSpacing: '0.05em'
-                                        }}
-                                    >
-                                        {segment.label}
-                                    </Typography>
-                                </Box>
-                            );
-                        })}
-                    </Box>
+                    <IconButton
+                        sx={{
+                            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s',
+                            p: 0, // Reduce padding to align better
+                        }}
+                    >
+                        <ExpandMoreIcon />
+                    </IconButton>
                 </Box>
 
-                <IconButton
-                    sx={{
-                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                    }}
-                >
-                    <ExpandMoreIcon />
-                </IconButton>
+                {/* Row 2: Segments (Work/Rest) */}
+                <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch', width: '100%' }}>
+                    {timer.segments.map((segment, index) => {
+                        const isActive = index === timer.currentSegmentIndex;
+                        const timeToShow = isActive ? timer.remainingTime : segment.duration;
+                        const originalDuration = segment.duration;
+
+                        return (
+                            <Box
+                                key={index}
+                                sx={{
+                                    textAlign: 'center',
+                                    opacity: isActive ? 1 : 0.5,
+                                    transition: 'all 0.3s ease',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                    minWidth: 80,
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
+                                    <Typography
+                                        variant={isActive ? "h5" : "h6"}
+                                        sx={{
+                                            fontWeight: isActive ? 800 : 600,
+                                            color: isActive ? color : 'text.secondary',
+                                            lineHeight: 1,
+                                            fontFeatureSettings: "'tnum'",
+                                            fontVariantNumeric: 'tabular-nums',
+                                        }}
+                                    >
+                                        {Math.floor(timeToShow / 60)}:{(timeToShow % 60).toString().padStart(2, '0')}
+                                    </Typography>
+
+                                    {isActive && (
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: 'text.disabled',
+                                                fontWeight: 500,
+                                                fontSize: '0.75rem',
+                                            }}
+                                        >
+                                            / {Math.floor(originalDuration / 60)}:{(originalDuration % 60).toString().padStart(2, '0')}
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        display: 'block',
+                                        color: isActive ? color : 'text.secondary',
+                                        fontSize: '0.75rem',
+                                        mt: 0.5,
+                                        fontWeight: isActive ? 700 : 500,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.05em'
+                                    }}
+                                >
+                                    {segment.label}
+                                </Typography>
+                            </Box>
+                        );
+                    })}
+                </Box>
             </Box>
 
             {/* Expanded Content */}

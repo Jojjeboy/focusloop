@@ -165,6 +165,27 @@ const AppLayout = () => {
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </Box>
+
+        {/* Footer */}
+        <Box
+          component="footer"
+          sx={{
+            py: 2,
+            px: 2,
+            mt: 'auto',
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            Latest Update: {__COMMIT_MESSAGE__}
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+            {new Date(__COMMIT_DATE__).toLocaleString()}
+          </Typography>
+        </Box>
       </Box>
     </ThemeProvider>
   );

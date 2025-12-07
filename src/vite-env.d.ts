@@ -1,4 +1,8 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/client" />
+
+declare const __COMMIT_MESSAGE__: string;
+declare const __COMMIT_DATE__: string;
 /// <reference types="vitest" />
 /// <reference types="@testing-library/jest-dom" />
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import TimerControls from '../TimerControls';
 import { TimerCombination, TimerStatus, TimerType } from '../../../../core/models/TimerCombination';

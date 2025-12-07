@@ -59,4 +59,7 @@ export default defineConfig({
     })
   ],
   base: '/focusloop/', // Base URL for GitHub Pages
+  build: {
+    chunkSizeWarningLimit: 1300,
+  },
 })

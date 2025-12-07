@@ -77,19 +77,39 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     return (
         <Box
             sx={{
-                borderRadius: 3, // 12px
+                borderRadius: '6px',
                 bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
                 boxShadow: 1,
                 mb: 2,
                 transition: 'all 0.2s ease-in-out',
+                position: 'relative',
+                overflow: 'hidden',
                 '&:hover': {
                     boxShadow: 3,
                     transform: 'translateY(-2px)',
                 },
             }}
         >
+            {/* Background Progress Fill */}
+            {timer.status !== TimerStatus.IDLE && !expanded && (
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        width: `${100 - (timer.remainingTime / segmentDuration) * 100}%`,
+                        bgcolor: color,
+                        opacity: 0.08,
+                        transition: 'width 1s linear',
+                        zIndex: 0,
+                        pointerEvents: 'none',
+                    }}
+                />
+            )}
+
             {/* Collapsed Header - Always Visible */}
             <Box
                 onClick={handleToggleExpand}
@@ -98,6 +118,8 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                     display: 'flex',
                     flexDirection: 'column', // Changed to column
                     cursor: 'pointer',
+                    position: 'relative',
+                    zIndex: 1,
                 }}
             >
                 {/* Row 1: Title and Expand Arrow */}
@@ -199,7 +221,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
             {/* Expanded Content */}
             <Collapse in={expanded}>
-                <Box sx={{ px: 3, pb: 3 }}>
+                <Box sx={{ px: 3, pb: 3, position: 'relative', zIndex: 1 }}>
                     {/* Segment Info and Menu */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                         <Chip

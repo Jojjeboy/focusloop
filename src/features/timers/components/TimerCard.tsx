@@ -117,8 +117,8 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                     </IconButton>
                 </Box>
 
-                {/* Row 2: Segments (Work/Rest) */}
-                <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch', width: '100%' }}>
+                {/* Row 2: Segments (Work/Rest) and Round Info */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                     {timer.segments.map((segment, index) => {
                         const isActive = index === timer.currentSegmentIndex;
                         const timeToShow = isActive ? timer.remainingTime : segment.duration;
@@ -134,7 +134,8 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                                     display: 'flex',
                                     flexDirection: 'column',
                                     justifyContent: 'center',
-                                    minWidth: 80,
+                                    flex: 1,
+                                    width: 0,
                                 }}
                             >
                                 <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
@@ -164,24 +165,35 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                                         </Typography>
                                     )}
                                 </Box>
-
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        display: 'block',
-                                        color: isActive ? color : 'text.secondary',
-                                        fontSize: '0.75rem',
-                                        mt: 0.5,
-                                        fontWeight: isActive ? 700 : 500,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.05em'
-                                    }}
-                                >
-                                    {segment.label}
-                                </Typography>
                             </Box>
                         );
                     })}
+
+                    <Box
+                        sx={{
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            flex: 1,
+                            width: 0,
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 0.5 }}>
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'text.secondary',
+                                    lineHeight: 1,
+                                    fontFeatureSettings: "'tnum'",
+                                    fontVariantNumeric: 'tabular-nums',
+                                }}
+                            >
+                                {timer.currentRepeat} / {timer.repeatCount}
+                            </Typography>
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
 
@@ -249,23 +261,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                                     strokeLinecap: 'round',
                                 }}
                             />
-                            <Box
-                                sx={{
-                                    top: 0,
-                                    left: 0,
-                                    bottom: 0,
-                                    right: 0,
-                                    position: 'absolute',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
-                                    remaining
-                                </Typography>
-                            </Box>
                         </Box>
                     </Box>
 
@@ -343,7 +338,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                             >
                                 {isRunning ? <PauseIcon sx={{ color: 'white', mr: 0.5 }} /> : <PlayArrowIcon sx={{ color: 'white', mr: 0.5 }} />}
                                 <Typography sx={{ color: 'white', fontWeight: 600 }}>
-                                    {isRunning ? 'Pause' : 'Start'}
+                                    {isRunning ? 'Pause' : (timer.status === TimerStatus.PAUSED ? 'Resume' : 'Start')}
                                 </Typography>
                             </Box>
                         )}

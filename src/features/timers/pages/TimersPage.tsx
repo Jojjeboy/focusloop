@@ -30,7 +30,7 @@ export const TimersPage: React.FC = () => {
   const [editingTimer, setEditingTimer] = useState<TimerCombination | null>(null);
 
   // Color scheme for different timer types
-  const timerColors = ['#9333EA', '#10B981', '#F59E0B', '#EC4899', '#06B6D4'];
+  const timerColors = ['#10B981', '#F59E0B', '#9333EA', '#EC4899', '#06B6D4'];
 
   const handleCreateOrUpdateTimer = async (timerData: TimerFormData) => {
     const commonData = {

@@ -59,7 +59,11 @@ export const TimersPage: React.FC = () => {
       const updates: Partial<TimerCombination> = { ...commonData };
 
       // If timer is IDLE and at the start, update remainingTime to new duration
-      if (editingTimer.status === 'IDLE' && editingTimer.currentSegmentIndex === 0 && editingTimer.remainingTime === editingTimer.segments[0].duration) {
+      if (
+        editingTimer.status === 'IDLE' &&
+        editingTimer.currentSegmentIndex === 0 &&
+        editingTimer.remainingTime === editingTimer.segments[0].duration
+      ) {
         updates.remainingTime = commonData.segments[0].duration;
       } else if (editingTimer.status === 'IDLE' && editingTimer.currentSegmentIndex === 0) {
         // Also update if it was just IDLE, even if remainingTime didn't match exactly (e.g. if it was reset)
@@ -100,17 +104,16 @@ export const TimersPage: React.FC = () => {
       category: editingTimer.description?.split(' ')[0] || 'Work',
       workDuration: editingTimer.segments[0].duration,
       restDuration: editingTimer.segments[1]?.duration || 300,
-      rounds: editingTimer.repeatCount
+      rounds: editingTimer.repeatCount,
     };
   }, [editingTimer]);
 
-  const activeTimers = timers.filter(t => t.status !== TimerStatus.ARCHIVED);
-  const finishedTimers = timers.filter(t => t.status === TimerStatus.ARCHIVED);
+  const activeTimers = timers.filter((t) => t.status !== TimerStatus.ARCHIVED);
+  const finishedTimers = timers.filter((t) => t.status === TimerStatus.ARCHIVED);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Container maxWidth="md" sx={{ py: 3 }}>
-
         {/* Active Timers Section */}
         <Typography
           variant="h6"
@@ -158,7 +161,14 @@ export const TimersPage: React.FC = () => {
             </IconButton>
           </Box>
         ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, mb: 6 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+              gap: 3,
+              mb: 6,
+            }}
+          >
             {activeTimers.map((timer, index) => (
               <TimerCard
                 key={timer.id}
@@ -188,7 +198,14 @@ export const TimersPage: React.FC = () => {
             >
               Finished
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, opacity: 0.8 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+                gap: 3,
+                opacity: 0.8,
+              }}
+            >
               {finishedTimers.map((timer, index) => (
                 <TimerCard
                   key={timer.id}

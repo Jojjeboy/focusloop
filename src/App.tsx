@@ -24,7 +24,8 @@ const AppLayout = () => {
     if (typeof globalThis.window !== 'undefined') {
       return (
         localStorage.getItem('theme') === 'dark' ||
-        (!('theme' in localStorage) && globalThis.window.matchMedia('(prefers-color-scheme: dark)').matches)
+        (!('theme' in localStorage) &&
+          globalThis.window.matchMedia('(prefers-color-scheme: dark)').matches)
       );
     }
     return false;
@@ -138,16 +139,25 @@ const AppLayout = () => {
           <Toolbar>
             {/* Logo instead of text */}
             <Box
-              sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 1.5 }}
+              sx={{
+                flexGrow: 1,
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                gap: 1.5,
+              }}
               onClick={() => navigate('/')}
             >
               <img src={Logo} alt="FocusLoop" style={{ height: '32px', borderRadius: '8px' }} />
-              <Typography variant="h6" sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(to right, #2563EB, #9333EA)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  background: 'linear-gradient(to right, #2563EB, #9333EA)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
                 FocusLoop
               </Typography>
             </Box>

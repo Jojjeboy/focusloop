@@ -6,29 +6,29 @@ import { TimerCombination } from '../models/TimerCombination';
  */
 
 export interface TimerContextValue {
-    timers: TimerCombination[];
-    activeTimer: TimerCombination | null;
-    setActiveTimer: (timer: TimerCombination | null) => void;
-    createTimer: (
-        data: Omit<
-            TimerCombination,
-            | 'id'
-            | 'createdAt'
-            | 'updatedAt'
-            | 'currentSegmentIndex'
-            | 'currentRepeat'
-            | 'status'
-            | 'remainingTime'
-            | 'totalElapsedTime'
-        >
-    ) => Promise<TimerCombination>;
-    updateTimer: (id: string, data: Partial<TimerCombination>) => Promise<void>;
-    deleteTimer: (id: string) => Promise<void>;
-    startTimer: (id: string) => void;
-    pauseTimer: (id: string) => void;
-    resetTimer: (id: string) => void;
-    archiveTimer: (id: string) => Promise<void>;
-    refreshTimers: () => Promise<void>;
+  timers: TimerCombination[];
+  activeTimer: TimerCombination | null;
+  setActiveTimer: (timer: TimerCombination | null) => void;
+  createTimer: (
+    data: Omit<
+      TimerCombination,
+      | 'id'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'currentSegmentIndex'
+      | 'currentRepeat'
+      | 'status'
+      | 'remainingTime'
+      | 'totalElapsedTime'
+    >
+  ) => Promise<TimerCombination>;
+  updateTimer: (id: string, data: Partial<TimerCombination>) => Promise<void>;
+  deleteTimer: (id: string) => Promise<void>;
+  startTimer: (id: string) => void;
+  pauseTimer: (id: string) => void;
+  resetTimer: (id: string) => void;
+  archiveTimer: (id: string) => Promise<void>;
+  refreshTimers: () => Promise<void>;
 }
 
 export const TimerContext = createContext<TimerContextValue | undefined>(undefined);
@@ -37,9 +37,9 @@ export const TimerContext = createContext<TimerContextValue | undefined>(undefin
  * Hook to use TimerContext
  */
 export const useTimers = (): TimerContextValue => {
-    const context = useContext(TimerContext);
-    if (context === undefined) {
-        throw new Error('useTimers must be used within a TimerProvider');
-    }
-    return context;
+  const context = useContext(TimerContext);
+  if (context === undefined) {
+    throw new Error('useTimers must be used within a TimerProvider');
+  }
+  return context;
 };

@@ -23,9 +23,8 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
   // Detta ersätter den felaktiga synkroniserings-useEffect.
   const activeTimer = React.useMemo(() => {
     if (!activeTimerId) return null;
-    return timers.find(t => t.id === activeTimerId) || null;
+    return timers.find((t) => t.id === activeTimerId) || null;
   }, [activeTimerId, timers]);
-
 
   // Load timers from Firestore when user authenticates
   const refreshTimers = useCallback(async () => {
@@ -39,13 +38,13 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       const firestoreTimers = await FirestoreService.getUserTimers(user.uid);
 
       // Smart merge: prefer local active timers over stale Firestore data
-      firestoreTimers.forEach(firestoreTimer => {
+      firestoreTimers.forEach((firestoreTimer) => {
         const localTimer = TimerService.getById(firestoreTimer.id);
 
         if (localTimer) {
           // Check if local timer is in an active state (RUNNING or PAUSED)
-          const isLocalActive = localTimer.status === TimerStatus.RUNNING ||
-            localTimer.status === TimerStatus.PAUSED;
+          const isLocalActive =
+            localTimer.status === TimerStatus.RUNNING || localTimer.status === TimerStatus.PAUSED;
 
           // Compare timestamps to determine which version is more recent
           const localUpdatedAt = new Date(localTimer.updatedAt).getTime();
@@ -65,8 +64,9 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
               pausedAt: localTimer.pausedAt || null,
             };
 
-            FirestoreService.updateTimer(firestoreTimer.id, updateData)
-              .catch(err => console.error('Error syncing local timer to Firestore:', err));
+            FirestoreService.updateTimer(firestoreTimer.id, updateData).catch((err) =>
+              console.error('Error syncing local timer to Firestore:', err)
+            );
 
             // Keep local timer as-is (don't overwrite with Firestore data)
           } else {
@@ -115,80 +115,91 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     setActiveTimerId(timer ? timer.id : null);
   }, []);
 
-  const createTimer = useCallback(async (
-    data: Partial<TimerCombination>
-  ): Promise<TimerCombination> => {
-    // Create locally first
-    const timer = TimerService.create(data);
+  const createTimer = useCallback(
+    async (data: Partial<TimerCombination>): Promise<TimerCombination> => {
+      // Create locally first
+      const timer = TimerService.create(data);
 
-    // Sync to Firestore if user is authenticated
-    if (user && syncEnabled) {
-      try {
-        // Pass timer data without id, createdAt, updatedAt (Firestore handles these)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...timerData } = timer;
-        await FirestoreService.createTimer(user.uid, timerData);
-      } catch (error) {
-        console.error('Error creating timer in Firestore:', error);
-      }
-    }
-
-    return timer;
-  }, [user, syncEnabled]);
-
-  const updateTimer = useCallback(async (id: string, data: Partial<TimerCombination>) => {
-    // Update locally first
-    TimerService.update(id, data);
-
-    // Sync to Firestore if user is authenticated
-    if (user && syncEnabled) {
-      // FIX LINT ERROR 2 (no-empty): Lägg till den saknade Firestore uppdateringslogiken här
-      try {
-        await FirestoreService.updateTimer(id, data);
-      } catch (error) {
-        console.error('Error updating timer in Firestore:', error);
-      }
-    }
-  }, [user, syncEnabled]);
-
-  const deleteTimer = useCallback(async (id: string) => {
-    setActiveTimerId((currentId) => {
-      if (currentId === id) {
-        return null;
-      }
-      return currentId;
-    });
-
-    // Delete locally first
-    TimerService.delete(id);
-
-    // Sync to Firestore if user is authenticated
-    if (user && syncEnabled) {
-      try {
-        await FirestoreService.deleteTimer(id);
-      } catch (error) {
-        console.error('Error deleting timer from Firestore:', error);
-      }
-    }
-  }, [user, syncEnabled]);
-
-  const startTimer = useCallback(async (id: string) => {
-    const timer = TimerService.start(id);
-    if (timer) {
-      // setActiveTimerState(timer) ersätts av att TimerService.subscribe anropas,
-      // som uppdaterar 'timers', vilket i sin tur triggar 'useMemo' för att uppdatera 'activeTimer'.
-
-      // Sync to Firestore
+      // Sync to Firestore if user is authenticated
       if (user && syncEnabled) {
         try {
-          // ÅTGÄRD 2: Explicit set pausedAt till null när timern startas/återupptas
-          await FirestoreService.updateTimer(id, { status: TimerStatus.RUNNING, pausedAt: null });
+          // Pass timer data without id, createdAt, updatedAt (Firestore handles these)
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...timerData } = timer;
+          await FirestoreService.createTimer(user.uid, timerData);
         } catch (error) {
-          console.error('Error syncing start timer:', error);
+          console.error('Error creating timer in Firestore:', error);
         }
       }
-    }
-  }, [user, syncEnabled]);
+
+      return timer;
+    },
+    [user, syncEnabled]
+  );
+
+  const updateTimer = useCallback(
+    async (id: string, data: Partial<TimerCombination>) => {
+      // Update locally first
+      TimerService.update(id, data);
+
+      // Sync to Firestore if user is authenticated
+      if (user && syncEnabled) {
+        // FIX LINT ERROR 2 (no-empty): Lägg till den saknade Firestore uppdateringslogiken här
+        try {
+          await FirestoreService.updateTimer(id, data);
+        } catch (error) {
+          console.error('Error updating timer in Firestore:', error);
+        }
+      }
+    },
+    [user, syncEnabled]
+  );
+
+  const deleteTimer = useCallback(
+    async (id: string) => {
+      setActiveTimerId((currentId) => {
+        if (currentId === id) {
+          return null;
+        }
+        return currentId;
+      });
+
+      // Delete locally first
+      TimerService.delete(id);
+
+      // Sync to Firestore if user is authenticated
+      if (user && syncEnabled) {
+        try {
+          await FirestoreService.deleteTimer(id);
+        } catch (error) {
+          console.error('Error deleting timer from Firestore:', error);
+        }
+      }
+    },
+    [user, syncEnabled]
+  );
+
+  const startTimer = useCallback(
+    async (id: string) => {
+      await TimerService.requestNotificationPermission();
+      const timer = TimerService.start(id);
+      if (timer) {
+        // setActiveTimerState(timer) ersätts av att TimerService.subscribe anropas,
+        // som uppdaterar 'timers', vilket i sin tur triggar 'useMemo' för att uppdatera 'activeTimer'.
+
+        // Sync to Firestore
+        if (user && syncEnabled) {
+          try {
+            // ÅTGÄRD 2: Explicit set pausedAt till null när timern startas/återupptas
+            await FirestoreService.updateTimer(id, { status: TimerStatus.RUNNING, pausedAt: null });
+          } catch (error) {
+            console.error('Error syncing start timer:', error);
+          }
+        }
+      }
+    },
+    [user, syncEnabled]
+  );
 
   const pauseTimer = useCallback(
     async (id: string) => {
@@ -211,68 +222,77 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     [user, syncEnabled]
   );
 
-  const resetTimer = useCallback(async (id: string) => {
-    const timer = TimerService.reset(id);
-    if (timer) {
-      // Sync to Firestore
-      if (user && syncEnabled) {
-        try {
-          await FirestoreService.updateTimer(id, {
-            status: TimerStatus.IDLE,
-            currentSegmentIndex: 0,
-            currentRepeat: 1,
-            remainingTime: timer.remainingTime,
-            totalElapsedTime: 0,
-            pausedAt: null // ÅTGÄRD 3: Explicit set till null när timern nollställs
-          });
-        } catch (error) {
-          console.error('Error syncing reset timer:', error);
+  const resetTimer = useCallback(
+    async (id: string) => {
+      const timer = TimerService.reset(id);
+      if (timer) {
+        // Sync to Firestore
+        if (user && syncEnabled) {
+          try {
+            await FirestoreService.updateTimer(id, {
+              status: TimerStatus.IDLE,
+              currentSegmentIndex: 0,
+              currentRepeat: 1,
+              remainingTime: timer.remainingTime,
+              totalElapsedTime: 0,
+              pausedAt: null, // ÅTGÄRD 3: Explicit set till null när timern nollställs
+            });
+          } catch (error) {
+            console.error('Error syncing reset timer:', error);
+          }
         }
       }
-    }
-  }, [user, syncEnabled]);
+    },
+    [user, syncEnabled]
+  );
 
-  const archiveTimer = useCallback(async (id: string) => {
-    const timer = TimerService.archive(id);
-    if (timer) {
-      // Sync to Firestore
-      if (user && syncEnabled) {
-        try {
-          await FirestoreService.updateTimer(id, {
-            status: TimerStatus.ARCHIVED,
-          });
-        } catch (error) {
-          console.error('Error syncing archive timer:', error);
+  const archiveTimer = useCallback(
+    async (id: string) => {
+      const timer = TimerService.archive(id);
+      if (timer) {
+        // Sync to Firestore
+        if (user && syncEnabled) {
+          try {
+            await FirestoreService.updateTimer(id, {
+              status: TimerStatus.ARCHIVED,
+            });
+          } catch (error) {
+            console.error('Error syncing archive timer:', error);
+          }
         }
       }
-    }
-  }, [user, syncEnabled]);
+    },
+    [user, syncEnabled]
+  );
 
-  const value: TimerContextValue = React.useMemo(() => ({
-    timers,
-    activeTimer, // Detta är nu den deriverade (computed) variabeln
-    setActiveTimer,
-    createTimer,
-    updateTimer,
-    deleteTimer,
-    startTimer,
-    pauseTimer,
-    resetTimer,
-    archiveTimer,
-    refreshTimers,
-  }), [
-    timers,
-    activeTimer, // Inkludera den deriverade variabeln här
-    setActiveTimer,
-    createTimer,
-    updateTimer,
-    deleteTimer,
-    startTimer,
-    pauseTimer,
-    resetTimer,
-    archiveTimer,
-    refreshTimers,
-  ]);
+  const value: TimerContextValue = React.useMemo(
+    () => ({
+      timers,
+      activeTimer, // Detta är nu den deriverade (computed) variabeln
+      setActiveTimer,
+      createTimer,
+      updateTimer,
+      deleteTimer,
+      startTimer,
+      pauseTimer,
+      resetTimer,
+      archiveTimer,
+      refreshTimers,
+    }),
+    [
+      timers,
+      activeTimer, // Inkludera den deriverade variabeln här
+      setActiveTimer,
+      createTimer,
+      updateTimer,
+      deleteTimer,
+      startTimer,
+      pauseTimer,
+      resetTimer,
+      archiveTimer,
+      refreshTimers,
+    ]
+  );
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;
 };

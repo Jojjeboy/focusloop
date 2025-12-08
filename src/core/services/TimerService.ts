@@ -1,4 +1,5 @@
 ﻿import { TimerCombination, TimerStatus } from '../models/TimerCombination';
+import alertSound from '../../assets/alert.mp3';
 
 /**
  * TimerService - CRUD operations for timer combinations
@@ -57,7 +58,8 @@ class TimerServiceClass {
               hydratedTimer.remainingTime = newRemainingTime;
 
               // Add elapsed time to total elapsed time
-              hydratedTimer.totalElapsedTime = (hydratedTimer.totalElapsedTime || 0) + elapsedSeconds;
+              hydratedTimer.totalElapsedTime =
+                (hydratedTimer.totalElapsedTime || 0) + elapsedSeconds;
 
               // If the segment completed during the reload, we need to handle segment transitions
               if (newRemainingTime === 0) {
@@ -109,7 +111,7 @@ class TimerServiceClass {
 
         this.timers = hydratedTimers;
 
-        if (this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+        if (this.getAll().some((t) => t.status === TimerStatus.RUNNING)) {
           this.startTicking();
         }
       } catch (error) {
@@ -168,9 +170,7 @@ class TimerServiceClass {
   /**
    * Create a new timer combination
    */
-  create(
-    data: Partial<TimerCombination>
-  ): TimerCombination {
+  create(data: Partial<TimerCombination>): TimerCombination {
     const id = data.id || this.generateId();
     const now = new Date();
 
@@ -242,7 +242,7 @@ class TimerServiceClass {
       this.notifyListeners();
     }
 
-    if (!this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+    if (!this.getAll().some((t) => t.status === TimerStatus.RUNNING)) {
       this.stopTicking();
     }
 
@@ -298,7 +298,7 @@ class TimerServiceClass {
     }
 
     // Explicitly check how many are running *before* the update.
-    const runningTimers = this.getAll().filter(t => t.status === TimerStatus.RUNNING);
+    const runningTimers = this.getAll().filter((t) => t.status === TimerStatus.RUNNING);
 
     const updatedTimer = this.update(id, {
       status: TimerStatus.PAUSED,
@@ -330,7 +330,7 @@ class TimerServiceClass {
       totalElapsedTime: 0,
     });
 
-    if (!this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+    if (!this.getAll().some((t) => t.status === TimerStatus.RUNNING)) {
       this.stopTicking();
     }
     return updatedTimer;
@@ -384,6 +384,38 @@ class TimerServiceClass {
   }
 
   /**
+   * Request notification permission
+   */
+  public async requestNotificationPermission(): Promise<void> {
+    if (!('Notification' in window)) {
+      console.warn('This browser does not support desktop notification');
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  }
+
+  /**
+   * Send a notification
+   */
+  private sendNotification(title: string, body: string): void {
+    if (!('Notification' in window)) {
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      // Use the logo if available or just default
+      new Notification(title, {
+        body,
+        icon: '/pwa-192x192.png', // Assuming PWA setup or typical icon path, or we can omit
+        silent: true, // We are playing our own sound
+      });
+    }
+  }
+
+  /**
    * Update remaining time
    */
   tick(id: string): TimerCombination | undefined {
@@ -399,34 +431,22 @@ class TimerServiceClass {
         navigator.vibrate(2000);
       }
 
-      // Play a beep sound for 2 seconds
+      // Play the alert sound
       try {
-        const AudioContext = window.AudioContext || (window as { webkitAudioContext?: new () => AudioContext }).webkitAudioContext;
-        if (AudioContext) {
-          const audioContext = new AudioContext();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-
-          oscillator.type = 'sine';
-          oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
-
-          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime); // Lower volume
-
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-
-          oscillator.start();
-          setTimeout(() => {
-            oscillator.stop();
-            audioContext.close();
-          }, 2000);
-        }
+        const audio = new Audio(alertSound);
+        audio.play().catch((e) => console.warn('Audio play failed', e));
       } catch (e) {
-        console.warn("Audio play failed", e);
+        console.warn('Audio setup failed', e);
       }
 
+      // Show notification
+      this.sendNotification('Timer Completed', 'Your timer has finished!');
+
       const nextTimer = this.nextSegment(id);
-      if (nextTimer?.status === TimerStatus.COMPLETED && !this.getAll().some(t => t.status === TimerStatus.RUNNING)) {
+      if (
+        nextTimer?.status === TimerStatus.COMPLETED &&
+        !this.getAll().some((t) => t.status === TimerStatus.RUNNING)
+      ) {
         this.stopTicking();
       }
       return nextTimer;
